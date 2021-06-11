@@ -262,6 +262,11 @@ namespace Grand.Web.Endpoints
 
         private void RegisterProductRoute(IEndpointRouteBuilder endpointRouteBuilder, string pattern)
         {
+            //MyGold API
+            endpointRouteBuilder.MapControllerRoute("GetGoldPrice",
+                            pattern + "GetGoldPrice/",
+                            new { controller = "Product", action = "GetGoldPrice" });
+
             //recently viewed products
             endpointRouteBuilder.MapControllerRoute("RecentlyViewedProducts",
                             pattern + "recentlyviewedproducts/",

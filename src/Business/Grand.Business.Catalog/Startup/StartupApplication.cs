@@ -67,6 +67,7 @@ namespace Grand.Business.Catalog.Startup
             serviceCollection.AddScoped<IInventoryManageService, InventoryManageService>();
             serviceCollection.AddScoped<IStockQuantityService, StockQuantityService>();
             serviceCollection.AddScoped<IPricingService, PricingService>();
+            serviceCollection.AddScoped<IGoldPriceService, GoldPriceService>(); //ALI: Gold Service
         }
 
         private void RegisterDiscountsService(IServiceCollection serviceCollection)

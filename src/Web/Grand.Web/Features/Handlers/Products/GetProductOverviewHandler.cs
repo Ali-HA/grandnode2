@@ -327,7 +327,8 @@ namespace Grand.Web.Features.Handlers.Products
                         //prices
                         if (displayPrices)
                         {
-                            if (!product.EnteredPrice)
+                            //if (!product.EnteredPrice)
+                            if (true)    //  ALI MyGold  
                             {
                                 if (product.CallForPrice)
                                 {
@@ -409,7 +410,11 @@ namespace Grand.Web.Features.Handlers.Products
                             priceModel.OldPrice = null;
                             priceModel.Price = null;
                         }
-
+                        if (product.EnteredPrice)  //ALI  MyGold
+                        {
+                            priceModel.OldPrice = null;
+                            priceModel.Price = "GetPrice";
+                        }
                         #endregion
                     }
                     break;

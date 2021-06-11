@@ -134,6 +134,8 @@ namespace Grand.Web.Models.Catalog
             public bool EnteredPrice { get; set; }
             [GrandResourceDisplayName("Products.EnterProductPrice")]
             public double CustomerEnteredPrice { get; set; }
+            public double wt { get; set; }   //ALI: Gold Price Service
+            public double rt { get; set; }  //ALI: Gold Price Service
             public String CustomerEnteredPriceRange { get; set; }
             public bool DisableBuyButton { get; set; }
             public bool DisableWishlistButton { get; set; }

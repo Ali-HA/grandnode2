@@ -1,4 +1,5 @@
 ﻿using Grand.Business.Catalog.Events.Models;
+using Grand.Business.Catalog.Interfaces.Prices;
 using Grand.Business.Catalog.Interfaces.Products;
 using Grand.Business.Checkout.Interfaces.Orders;
 using Grand.Business.Common.Extensions;
@@ -37,6 +38,7 @@ namespace Grand.Web.Controllers
     {
         #region Fields
 
+        private readonly IGoldPriceService _goldService;
         private readonly IProductService _productService;
         private readonly IWorkContext _workContext;
         private readonly ITranslationService _translationService;
@@ -70,7 +72,8 @@ namespace Grand.Web.Controllers
             IMediator mediator,
             CatalogSettings catalogSettings,
             ShoppingCartSettings shoppingCartSettings,
-            CaptchaSettings captchaSettings
+            CaptchaSettings captchaSettings,
+            IGoldPriceService goldService
         )
         {
             _productService = productService;
@@ -87,8 +90,17 @@ namespace Grand.Web.Controllers
             _catalogSettings = catalogSettings;
             _shoppingCartSettings = shoppingCartSettings;
             _captchaSettings = captchaSettings;
+            _goldService = goldService;
         }
 
+        #endregion
+
+        #region Gold Price API
+        public async Task<IActionResult> GetGoldPrice(decimal weight, decimal ratio)
+        {
+            string[] res = await _goldService.s_GoldPrice(weight, ratio);
+            return Json(new { Price = res[0], UpdateDate = res[1] });
+        }
         #endregion
 
         #region Product details page

@@ -721,6 +721,10 @@ namespace Grand.Web.Features.Handlers.Products
             model.EnteredQuantity = updatecartitem != null ? updatecartitem.Quantity : product.OrderMinimumQuantity;
             model.MeasureUnit = !string.IsNullOrEmpty(product.UnitId) ? (await _measureService.GetMeasureUnitById(product.UnitId)).Name : string.Empty;
 
+            //ALI: Gold Price Service
+            model.wt = product.Price;
+            model.rt = product.OldPrice;
+
             //allowed quantities
             var allowedQuantities = product.ParseAllowedQuantities();
             foreach (var qty in allowedQuantities)
