@@ -49,6 +49,12 @@
                 <b-icon icon="search"></b-icon>
                 <span>@Loc["Products.QuickView"]</span>
             </a>
+            @if (!string.IsNullOrEmpty(Model.Flag))
+            {
+                <div class="product-label">
+                    <div class="badge badge-info">@Model.Flag</div>
+                </div>
+            }
         </div>
         <div class="card-body">
             <h5 class="card-title mb-0">
@@ -83,12 +89,12 @@
                         <div class="countdown-box alert alert-info d-table mb-1">
                             @if (Model.EndTime > DateTime.UtcNow)
                             {
-                                <countdown :end-time="@Model.EndTime.Value.ToUniversalTime().Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds">
+                                <countdown :end-time="@Model.EndTime.Value.Subtract(new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds">
                                     <template v-slot:process="{ timeObj }">
-                                        <span class="col-form-label">@Loc["AddToCart.Timeleft"]:</span>
-                                        <span>{{ `${timeObj.d}` }} : </span>
-                                        <span>{{ `${timeObj.h}` }} : </span>
-                                        <span>{{ `${timeObj.m}` }} : </span>
+                                        <span class="col-form-label">@Loc["AddToCart.Timeleft"]</span>
+                                        <span>{{ `${timeObj.d}` }}</span>
+                                        <span>{{ `${timeObj.h}` }}</span>
+                                        <span>{{ `${timeObj.m}` }}</span>
                                         <span>{{ `${timeObj.s}` }}</span>
                                     </template>
                                     <template v-slot:finish>

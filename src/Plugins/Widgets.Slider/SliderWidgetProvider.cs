@@ -38,13 +38,14 @@ namespace Widgets.Slider
             {
                 SliderWidgetDefaults.WidgetZoneHomePage,
                 SliderWidgetDefaults.WidgetZoneCategoryPage,
-                SliderWidgetDefaults.WidgetZoneCollectionPage
+                SliderWidgetDefaults.WidgetZoneCollectionPage,
+                SliderWidgetDefaults.WidgetZoneBrandPage,
             });
         }
 
         public Task<string> GetPublicViewComponentName(string widgetZone)
         {
-            return Task.FromResult("Widgets.Slider");
+            return Task.FromResult("WidgetSlider");
         }
 
     }

@@ -291,7 +291,7 @@ namespace Grand.Web.Endpoints
 
             //product email a friend
             endpointRouteBuilder.MapControllerRoute("ProductEmailAFriend",
-                            pattern + "productemailafriend/{productId}",
+                            pattern + "productemailafriend/{productId?}",
                             new { controller = "Product", action = "ProductEmailAFriend" });
 
             //product ask question
@@ -331,7 +331,7 @@ namespace Grand.Web.Endpoints
 
             //product attributes with "upload file" type
             endpointRouteBuilder.MapControllerRoute("UploadFileProductAttribute",
-                            pattern + "uploadfileproductattribute/{attributeId}",
+                            pattern + "uploadfileproductattribute/{attributeId?}",
                             new { controller = "Product", action = "UploadFileProductAttribute" });
         }
 

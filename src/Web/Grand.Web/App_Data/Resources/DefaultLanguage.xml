@@ -702,6 +702,24 @@
   <Resource Name="account.twofactorauth.disabled">
     <Value>Two factor authentication disabled</Value>
   </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.AppVerification.FirstLine">
+    <Value>Open authenticator application.</Value>
+  </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.AppVerification.SecondLine">
+    <Value>Enter the 6 digit code that authenticator application generates</Value>
+  </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.EmailVerification.FirstLine">
+    <Value>Open email from our store - Email Verification Code.</Value>
+  </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.EmailVerification.SecondLine">
+    <Value>Enter the 6 digit code that you can find in our message </Value>
+  </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.SMSVerification.FirstLine">
+    <Value>Open SMS message from our store - Verification Code.</Value>
+  </Resource>
+  <Resource Name="Account.TwoFactorAuth.Disable.SMSVerification.SecondLine">
+    <Value>Enter the 6 digit code that you can find in our message</Value>
+  </Resource>
   <Resource Name="Account.TwoFactorAuth.EmailVerification.FirstLine">
     <Value>1. Please check your email box</Value>
   </Resource>
@@ -2043,6 +2061,12 @@
   <Resource Name="Admin.Catalog.Brands.Info">
     <Value>Brand Info</Value>
   </Resource>
+  <Resource Name="Admin.Catalog.Brands.Imported">
+    <Value>Brands have been imported successfully.</Value>
+  </Resource>
+  <Resource Name="Admin.Catalog.Brand.List.ImportFromExcelTip">
+	<Value>Imported brands are distinguished by ID. If the ID already exists, then its corresponding brand will be updated. The ID does not need to be provided for new brands</Value>
+  </Resource>
   <Resource Name="Admin.Catalog.Brands.List.SearchBrandName">
     <Value>Brand name</Value>
   </Resource>
@@ -2165,6 +2189,9 @@
   </Resource>
   <Resource Name="Admin.Catalog.Categories.Fields.DisplayOrder">
     <Value>Display order</Value>
+  </Resource>
+  <Resource Name="Admin.Catalog.Categories.Fields.ExternalId">
+    <Value>External identifier</Value>
   </Resource>
   <Resource Name="Admin.Catalog.Categories.Fields.FeaturedProductsOnHomePage">
     <Value>Show featured products on home page</Value>
@@ -2947,7 +2974,7 @@
     <Value>Flag</Value>
   </Resource>
   <Resource Name="Admin.Catalog.Products.Fields.Flag.Hint">
-    <Value>Flag is a custom text that appears on catalog pages</Value>
+    <Value>Flag is a custom text that appears on catalog and product pages</Value>
   </Resource>
   <Resource Name="Admin.Catalog.Products.Fields.FullDescription">
     <Value>Full description</Value>
@@ -3274,7 +3301,7 @@
     <Value>Only published</Value>
   </Resource>
   <Resource Name="Admin.Catalog.Products.List.SearchPublished.ShowOnHomePage">
-    <Value>Show on homePage</Value>
+    <Value>Show on homepage</Value>
   </Resource>
   <Resource Name="Admin.Catalog.Products.List.SearchPublished.UnpublishedOnly">
     <Value>Only unpublished</Value>
@@ -3594,6 +3621,15 @@
   <Resource Name="Admin.Catalog.Products.PurchasedWithOrders">
     <Value>Purchased with orders</Value>
   </Resource>
+  <Resource Name="admin.catalog.products.recommended">
+    <Value>Recommended products</Value>
+  </Resource>
+  <Resource Name="admin.catalog.products.recommended.addnew">
+    <Value>Add new recommended products</Value>
+  </Resource>
+  <Resource Name="admin.catalog.products.recommended.fields.product">
+    <Value>Products</Value>
+  </Resource>
   <Resource Name="Admin.Catalog.Products.RelatedProducts">
     <Value>Related products</Value>
   </Resource>
@@ -3839,6 +3875,9 @@
   </Resource>
   <Resource Name="Admin.Common.ExportToExcel.Selected">
     <Value>Export to Excel (selected)</Value>
+  </Resource>
+  <Resource Name="Admin.Common.Filters">
+    <Value>Filters</Value>
   </Resource>
   <Resource Name="Admin.Common.Go">
     <Value>Go</Value>
@@ -6940,6 +6979,9 @@
   <Resource Name="Admin.Customers.Customers.CannotBeInVendoGroupWithoutVendorAssociated">
     <Value>A customer in the Vendors group should have a vendor account associated.</Value>
   </Resource>
+  <Resource Name="Admin.Customers.Customers.CannotTwoFactorEnabled">
+    <Value>You can't enable two-factor authentication (only disable is allowed)</Value>
+  </Resource>
   <Resource Name="Admin.Customers.Customers.CurrentShoppingCart">
     <Value>Current shopping cart</Value>
   </Resource>
@@ -7110,6 +7152,9 @@
   </Resource>
   <Resource Name="Admin.Customers.Customers.Fields.SystemName">
     <Value>System name</Value>
+  </Resource>
+  <Resource Name="Admin.Customers.Customers.Fields.TwoFactorEnabled">
+    <Value>Two-factor authentication is enabled</Value>
   </Resource>
   <Resource Name="Admin.Customers.Customers.Fields.URLReferrer">
     <Value>Created from Url</Value>
@@ -11017,6 +11062,9 @@
   <Resource Name="Admin.Settings.GeneralCommon.AllowToReadLetsEncryptFile">
     <Value>Allow to read Let's Encrypt file</Value>
   </Resource>
+  <Resource Name="Admin.Settings.GeneralCommon.AllowToSelectAdminTheme">
+    <Value>Allow to select admin theme</Value>
+  </Resource>
   <Resource Name="Admin.Settings.GeneralCommon.AllowToSelectStore">
     <Value>Allow to select store from dropdown list</Value>
   </Resource>
@@ -12241,7 +12289,7 @@
     <Value>Roslyn compilation</Value>
   </Resource>
   <Resource Name="Admin.System.Roslyn.Disabled">
-    <Value>Compilation of files csx are disabled. </Value>
+    <Value>Compilation of csx files are disabled.</Value>
   </Resource>
   <Resource Name="Admin.System.Roslyn.Errors">
     <Value>Errors during compilation</Value>
@@ -12437,6 +12485,12 @@
   </Resource>
   <Resource Name="Admin.System.Warnings.IgnoreStoreLimitations">
     <Value>In order to use this functionality you have to disable the following setting in the file appsettings.json -&gt; IgnoreStoreLimitations : set to False</Value>
+  </Resource>
+  <Resource Name="admin.system.warnings.performance.ignoreacl">
+    <Value>Customer group (ACL) limitations are ignored</Value>
+  </Resource>
+  <Resource Name="admin.system.warnings.performance.ignorestorelimitations">
+    <Value>Store limitations are ignored</Value>
   </Resource>
   <Resource Name="Admin.System.Warnings.PaymentMethods.NoActive">
     <Value>You don't have active payment methods</Value>
@@ -13358,6 +13412,9 @@
   </Resource>
   <Resource Name="ContactUs.FullName">
     <Value>Your name</Value>
+  </Resource>
+  <Resource Name="ContactUs.FullName.Hint">
+    <Value>Enter your name</Value>
   </Resource>
   <Resource Name="ContactUs.FullName.Required">
     <Value>Enter your name</Value>
@@ -15404,6 +15461,9 @@
   </Resource>
   <Resource Name="Products.RecentlyViewedProducts">
     <Value>Recently viewed products</Value>
+  </Resource>
+  <Resource Name="Products.RecommendedProducts">
+    <Value>Recommended products</Value>
   </Resource>
   <Resource Name="Products.RelatedProducts">
     <Value>Related products</Value>

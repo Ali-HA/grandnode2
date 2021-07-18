@@ -1,16 +1,20 @@
-﻿using Grand.Business.Checkout.Interfaces.Orders;
+﻿using Grand.Business.Checkout.Commands.Models.Orders;
+using Grand.Business.Checkout.Extensions;
+using Grand.Business.Checkout.Interfaces.Orders;
 using Grand.Business.Checkout.Interfaces.Payments;
-using Grand.Business.Common.Interfaces.Configuration;
-using Grand.Business.Common.Interfaces.Localization;
-using Grand.Business.Common.Interfaces.Security;
-using Grand.Business.Common.Interfaces.Stores;
-using Grand.Web.Common.Controllers;
+using Grand.Business.Checkout.Queries.Models.Orders;
+using Grand.Business.Common.Extensions;
+using Grand.Business.Common.Interfaces.Logging;
 using Grand.Domain.Orders;
 using Grand.Domain.Payments;
 using Grand.Infrastructure;
+using Grand.SharedKernel;
+using Grand.Web.Common.Controllers;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Payments.PayPalStandard.Models;
+using Microsoft.Extensions.Primitives;
+using Payments.PayPalStandard.Services;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -18,19 +22,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Grand.Business.Common.Interfaces.Logging;
-using Grand.Web.Common.Filters;
-using Grand.Business.Common.Services.Security;
-using Grand.Domain.Common;
-using Grand.Domain.Customers;
-using Grand.Business.Checkout.Extensions;
-using Grand.SharedKernel;
-using Grand.Business.Common.Extensions;
-using Grand.SharedKernel.Extensions;
-using Microsoft.Extensions.Primitives;
-using MediatR;
-using Grand.Business.Checkout.Queries.Models.Orders;
-using Grand.Business.Checkout.Commands.Models.Orders;
 
 namespace Payments.PayPalStandard.Controllers
 {
@@ -38,116 +29,39 @@ namespace Payments.PayPalStandard.Controllers
     public class PaymentPayPalStandardController : BasePaymentController
     {
         private readonly IWorkContext _workContext;
-        private readonly IStoreService _storeService;
-        private readonly ISettingService _settingService;
         private readonly IPaymentService _paymentService;
         private readonly IOrderService _orderService;
-        private readonly ITranslationService _translationService;
         private readonly ILogger _logger;
         private readonly IMediator _mediator;
-        private readonly IPermissionService _permissionService;
         private readonly IPaymentTransactionService _paymentTransactionService;
-        private readonly PaymentSettings _paymentSettings;
+        private readonly IPaypalHttpClient _paypalHttpClient;
 
-        public PaymentPayPalStandardController(IWorkContext workContext,
-            IStoreService storeService,
-            ISettingService settingService,
+        private readonly PaymentSettings _paymentSettings;
+        private readonly PayPalStandardPaymentSettings _payPalStandardPaymentSettings;
+
+        public PaymentPayPalStandardController(
+            IWorkContext workContext,
             IPaymentService paymentService,
             IOrderService orderService,
-            ITranslationService translationService,
             ILogger logger,
             IMediator mediator,
-            IPermissionService permissionService,
             IPaymentTransactionService paymentTransactionService,
+            IPaypalHttpClient paypalHttpClient,
+            PayPalStandardPaymentSettings payPalStandardPaymentSettings,
             PaymentSettings paymentSettings)
         {
             _workContext = workContext;
-            _storeService = storeService;
-            _settingService = settingService;
             _paymentService = paymentService;
             _orderService = orderService;
-            _translationService = translationService;
             _logger = logger;
             _mediator = mediator;
-            _permissionService = permissionService;
             _paymentTransactionService = paymentTransactionService;
+            _paypalHttpClient = paypalHttpClient;
+            _payPalStandardPaymentSettings = payPalStandardPaymentSettings;
             _paymentSettings = paymentSettings;
         }
 
-        protected virtual async Task<string> GetActiveStore(IStoreService storeService, IWorkContext workContext)
-        {
-            var stores = await storeService.GetAllStores();
-            if (stores.Count < 2)
-                return stores.FirstOrDefault().Id;
 
-            var storeId = workContext.CurrentCustomer.GetUserFieldFromEntity<string>(SystemCustomerFieldNames.AdminAreaStoreScopeConfiguration);
-            var store = await storeService.GetStoreById(storeId);
-
-            return store != null ? store.Id : "";
-        }
-
-        [AuthorizeAdmin]
-        [Area("Admin")]
-        public async Task<IActionResult> Configure()
-        {
-            if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
-                return AccessDeniedView();
-
-            //load settings for a chosen store scope
-            var storeScope = await GetActiveStore(_storeService, _workContext);
-            var payPalStandardPaymentSettings = _settingService.LoadSetting<PayPalStandardPaymentSettings>(storeScope);
-
-            var model = new ConfigurationModel();
-            model.UseSandbox = payPalStandardPaymentSettings.UseSandbox;
-            model.BusinessEmail = payPalStandardPaymentSettings.BusinessEmail;
-            model.PdtToken = payPalStandardPaymentSettings.PdtToken;
-            model.PdtValidateOrderTotal = payPalStandardPaymentSettings.PdtValidateOrderTotal;
-            model.AdditionalFee = payPalStandardPaymentSettings.AdditionalFee;
-            model.AdditionalFeePercentage = payPalStandardPaymentSettings.AdditionalFeePercentage;
-            model.PassProductNamesAndTotals = payPalStandardPaymentSettings.PassProductNamesAndTotals;
-            model.DisplayOrder = payPalStandardPaymentSettings.DisplayOrder;
-
-            model.StoreScope = storeScope;
-            
-            return View("~/Plugins/Payments.PayPalStandard/Views/PaymentPayPalStandard/Configure.cshtml", model);
-        }
-
-        [HttpPost]
-        [AuthorizeAdmin]
-        [Area("Admin")]
-        public async Task<IActionResult> Configure(ConfigurationModel model)
-        {
-            if (!await _permissionService.Authorize(StandardPermission.ManagePaymentMethods))
-                return AccessDeniedView();
-
-            if (!ModelState.IsValid)
-                return await Configure();
-
-            //load settings for a chosen store scope
-            var storeScope = await this.GetActiveStore(_storeService, _workContext);
-            var payPalStandardPaymentSettings = _settingService.LoadSetting<PayPalStandardPaymentSettings>(storeScope);
-
-            //save settings
-            payPalStandardPaymentSettings.UseSandbox = model.UseSandbox;
-            payPalStandardPaymentSettings.BusinessEmail = model.BusinessEmail;
-            payPalStandardPaymentSettings.PdtToken = model.PdtToken;
-            payPalStandardPaymentSettings.PdtValidateOrderTotal = model.PdtValidateOrderTotal;
-            payPalStandardPaymentSettings.AdditionalFee = model.AdditionalFee;
-            payPalStandardPaymentSettings.AdditionalFeePercentage = model.AdditionalFeePercentage;
-            payPalStandardPaymentSettings.PassProductNamesAndTotals = model.PassProductNamesAndTotals;
-            payPalStandardPaymentSettings.DisplayOrder = model.DisplayOrder;
-
-            await _settingService.SaveSetting(payPalStandardPaymentSettings, storeScope);
-
-            //now clear settings cache
-            await _settingService.ClearCache();
-
-            Success(_translationService.GetResource("Admin.Plugins.Saved"));
-
-            return await Configure();
-        }
-
-        
         private string QueryString(string name)
         {
             if (StringValues.IsNullOrEmpty(HttpContext.Request.Query[name]))
@@ -156,21 +70,19 @@ namespace Payments.PayPalStandard.Controllers
             return HttpContext.Request.Query[name].ToString();
         }
 
-        public async Task<IActionResult> PDTHandler(IFormCollection form)
+        public async Task<IActionResult> PDTHandler()
         {
             var tx = QueryString("tx");
-            Dictionary<string, string> values;
-            string response;
 
-            var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.PayPalStandard") as PayPalStandardPaymentProvider;
-            if (processor == null ||
+            if (_paymentService.LoadPaymentMethodBySystemName("Payments.PayPalStandard") is not PayPalStandardPaymentProvider processor ||
                 !processor.IsPaymentMethodActive(_paymentSettings))
                 throw new GrandException("PayPal Standard module cannot be loaded");
 
-            if (processor.GetPdtDetails(tx, out values, out response))
+            (var status, var values, var _) = await _paypalHttpClient.GetPdtDetails(tx);
+
+            if (status)
             {
-                string orderNumber = string.Empty;
-                values.TryGetValue("custom", out orderNumber);
+                values.TryGetValue("custom", out var orderNumber);
                 Guid orderNumberGuid = Guid.Empty;
                 try
                 {
@@ -192,26 +104,16 @@ namespace Payments.PayPalStandard.Controllers
                         _logger.Error("PayPal PDT. Error getting mc_gross", exc);
                     }
 
-                    string payer_status = string.Empty;
-                    values.TryGetValue("payer_status", out payer_status);
-                    string payment_status = string.Empty;
-                    values.TryGetValue("payment_status", out payment_status);
-                    string pending_reason = string.Empty;
-                    values.TryGetValue("pending_reason", out pending_reason);
-                    string mc_currency = string.Empty;
-                    values.TryGetValue("mc_currency", out mc_currency);
-                    string txn_id = string.Empty;
-                    values.TryGetValue("txn_id", out txn_id);
-                    string payment_type = string.Empty;
-                    values.TryGetValue("payment_type", out payment_type);
-                    string payer_id = string.Empty;
-                    values.TryGetValue("payer_id", out payer_id);
-                    string receiver_id = string.Empty;
-                    values.TryGetValue("receiver_id", out receiver_id);
-                    string invoice = string.Empty;
-                    values.TryGetValue("invoice", out invoice);
-                    string payment_fee = string.Empty;
-                    values.TryGetValue("payment_fee", out payment_fee);
+                    values.TryGetValue("payer_status", out var payer_status);
+                    values.TryGetValue("payment_status", out var payment_status);
+                    values.TryGetValue("pending_reason", out var pending_reason);
+                    values.TryGetValue("mc_currency", out var mc_currency);
+                    values.TryGetValue("txn_id", out var txn_id);
+                    values.TryGetValue("payment_type", out var payment_type);
+                    values.TryGetValue("payer_id", out var payer_id);
+                    values.TryGetValue("receiver_id", out var receiver_id);
+                    values.TryGetValue("invoice", out var invoice);
+                    values.TryGetValue("payment_fee", out var payment_fee);
 
                     var sb = new StringBuilder();
                     sb.AppendLine("Paypal PDT:");
@@ -231,8 +133,7 @@ namespace Payments.PayPalStandard.Controllers
                     sb.AppendLine("New payment status: " + newPaymentStatus);
 
                     //order note
-                    await _orderService.InsertOrderNote(new OrderNote
-                    {
+                    await _orderService.InsertOrderNote(new OrderNote {
                         Note = sb.ToString(),
                         DisplayToCustomer = false,
                         CreatedOnUtc = DateTime.UtcNow,
@@ -240,18 +141,14 @@ namespace Payments.PayPalStandard.Controllers
                     });
 
                     //load settings for a chosen store scope
-                    var storeScope = await this.GetActiveStore(_storeService, _workContext);
-                    var payPalStandardPaymentSettings = _settingService.LoadSetting<PayPalStandardPaymentSettings>(storeScope);
-
                     //validate order total
-                    if (payPalStandardPaymentSettings.PdtValidateOrderTotal && !Math.Round(mc_gross, 2).Equals(Math.Round(order.OrderTotal * order.CurrencyRate, 2)))
+                    if (_payPalStandardPaymentSettings.PdtValidateOrderTotal && !Math.Round(mc_gross, 2).Equals(Math.Round(order.OrderTotal * order.CurrencyRate, 2)))
                     {
                         string errorStr = string.Format("PayPal PDT. Returned order total {0} doesn't equal order total {1}. Order# {2}.", mc_gross, order.OrderTotal * order.CurrencyRate, order.OrderNumber);
                         _logger.Error(errorStr);
 
                         //order note
-                        await _orderService.InsertOrderNote(new OrderNote
-                        {
+                        await _orderService.InsertOrderNote(new OrderNote {
                             Note = errorStr,
                             OrderId = order.Id,
                             DisplayToCustomer = false,
@@ -277,30 +174,24 @@ namespace Payments.PayPalStandard.Controllers
             }
             else
             {
-                string orderNumber = string.Empty;
-                values.TryGetValue("custom", out orderNumber);
+                var custom = QueryString("custom");
                 Guid orderNumberGuid = Guid.Empty;
                 try
                 {
-                    orderNumberGuid = new Guid(orderNumber);
+                    orderNumberGuid = new Guid(custom);
                 }
                 catch { }
                 Order order = await _orderService.GetOrderByGuid(orderNumberGuid);
                 if (order != null)
-                {
-                    //order note
-                    await _orderService.InsertOrderNote(new OrderNote
-                    {
-                        Note = "PayPal PDT failed. " + response,
-                        DisplayToCustomer = false,
-                        CreatedOnUtc = DateTime.UtcNow,
-                        OrderId = order.Id,
-                    });
+                {                    
+                    return RedirectToRoute("CheckoutCompleted", new { orderId = order.Id });
                 }
-                return RedirectToAction("Index", "Home", new { area = "" });
+                else
+                    return RedirectToAction("Index", "Home", new { area = "" });
             }
         }
 
+        [HttpPost]
         public async Task<IActionResult> IPNHandler()
         {
             string strRequest = string.Empty;
@@ -308,13 +199,13 @@ namespace Payments.PayPalStandard.Controllers
             {
                 strRequest = await stream.ReadToEndAsync();
             }
-            Dictionary<string, string> values;
-            var processor = _paymentService.LoadPaymentMethodBySystemName("Payments.PayPalStandard") as PayPalStandardPaymentProvider;
-            if (processor == null ||
+            if (_paymentService.LoadPaymentMethodBySystemName("Payments.PayPalStandard") is not PayPalStandardPaymentProvider processor ||
                 !processor.IsPaymentMethodActive(_paymentSettings))
                 throw new GrandException("PayPal Standard module cannot be loaded");
 
-            if (processor.VerifyIpn(strRequest, out values))
+            var (success, values) = await _paypalHttpClient.VerifyIpn(strRequest);
+
+            if (success)
             {
                 #region values
                 double mc_gross = 0;
@@ -324,30 +215,18 @@ namespace Payments.PayPalStandard.Controllers
                 }
                 catch { }
 
-                string payer_status = string.Empty;
-                values.TryGetValue("payer_status", out payer_status);
-                string payment_status = string.Empty;
-                values.TryGetValue("payment_status", out payment_status);
-                string pending_reason = string.Empty;
-                values.TryGetValue("pending_reason", out pending_reason);
-                string mc_currency = string.Empty;
-                values.TryGetValue("mc_currency", out mc_currency);
-                string txn_id = string.Empty;
-                values.TryGetValue("txn_id", out txn_id);
-                string txn_type = string.Empty;
-                values.TryGetValue("txn_type", out txn_type);
-                string rp_invoice_id = string.Empty;
-                values.TryGetValue("rp_invoice_id", out rp_invoice_id);
-                string payment_type = string.Empty;
-                values.TryGetValue("payment_type", out payment_type);
-                string payer_id = string.Empty;
-                values.TryGetValue("payer_id", out payer_id);
-                string receiver_id = string.Empty;
-                values.TryGetValue("receiver_id", out receiver_id);
-                string invoice = string.Empty;
-                values.TryGetValue("invoice", out invoice);
-                string payment_fee = string.Empty;
-                values.TryGetValue("payment_fee", out payment_fee);
+                values.TryGetValue("payer_status", out var payer_status);
+                values.TryGetValue("payment_status", out var payment_status);
+                values.TryGetValue("pending_reason", out var pending_reason);
+                values.TryGetValue("mc_currency", out var mc_currency);
+                values.TryGetValue("txn_id", out var txn_id);
+                values.TryGetValue("txn_type", out var txn_type);
+                values.TryGetValue("rp_invoice_id", out var rp_invoice_id);
+                values.TryGetValue("payment_type", out var payment_type);
+                values.TryGetValue("payer_id", out var payer_id);
+                values.TryGetValue("receiver_id", out var receiver_id);
+                values.TryGetValue("invoice", out var invoice);
+                values.TryGetValue("payment_fee", out var payment_fee);
 
                 #endregion
 
@@ -387,8 +266,7 @@ namespace Payments.PayPalStandard.Controllers
                             if (order != null)
                             {
                                 //order note
-                                await _orderService.InsertOrderNote(new OrderNote
-                                {
+                                await _orderService.InsertOrderNote(new OrderNote {
                                     Note = sb.ToString(),
                                     DisplayToCustomer = false,
                                     CreatedOnUtc = DateTime.UtcNow,
@@ -420,8 +298,7 @@ namespace Payments.PayPalStandard.Controllers
                                                 //log
                                                 _logger.Error(errorStr);
                                                 //order note
-                                                await _orderService.InsertOrderNote(new OrderNote
-                                                {
+                                                await _orderService.InsertOrderNote(new OrderNote {
                                                     Note = errorStr,
                                                     DisplayToCustomer = false,
                                                     CreatedOnUtc = DateTime.UtcNow,
@@ -451,8 +328,7 @@ namespace Payments.PayPalStandard.Controllers
                                                 //log
                                                 _logger.Error(errorStr);
                                                 //order note
-                                                await _orderService.InsertOrderNote(new OrderNote
-                                                {
+                                                await _orderService.InsertOrderNote(new OrderNote {
                                                     Note = errorStr,
                                                     DisplayToCustomer = false,
                                                     CreatedOnUtc = DateTime.UtcNow,
@@ -502,17 +378,19 @@ namespace Payments.PayPalStandard.Controllers
                         #endregion
                         break;
                 }
+                return Ok();
+
             }
             else
             {
                 _logger.Error("PayPal IPN failed.", new GrandException(strRequest));
             }
 
-            //nothing should be rendered to visitor
-            return Content("");
+            return BadRequest();
+
         }
 
-        public async Task<IActionResult> CancelOrder(IFormCollection form)
+        public async Task<IActionResult> CancelOrder()
         {
             var order = (await _orderService.SearchOrders(storeId: _workContext.CurrentStore.Id,
                 customerId: _workContext.CurrentCustomer.Id, pageSize: 1)).FirstOrDefault();

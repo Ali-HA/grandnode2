@@ -776,8 +776,10 @@ namespace Grand.Web.Admin.Services
             {
                 model.SearchVendorId = _workContext.CurrentVendor.Id;
             }
+
             //limit for store manager
-            model.SearchStoreId = _workContext.CurrentCustomer.StaffStoreId;
+            if(!string.IsNullOrEmpty(_workContext.CurrentCustomer.StaffStoreId))
+                model.SearchStoreId = _workContext.CurrentCustomer.StaffStoreId;
 
             var categoryIds = new List<string>();
             if (!string.IsNullOrEmpty(model.SearchCategoryId))
@@ -1140,6 +1142,20 @@ namespace Grand.Web.Admin.Services
             return (products.Select(x => x.ToModel(_dateTimeService)).ToList(), products.TotalCount);
         }
         public virtual async Task<(IList<ProductModel> products, int totalCount)> PrepareProductModel(ProductModel.AddCrossSellProductModel model, int pageIndex, int pageSize)
+        {
+            //a vendor should have access only to his products
+            if (_workContext.CurrentVendor != null)
+            {
+                model.SearchVendorId = _workContext.CurrentVendor.Id;
+            }
+
+            //limit for store manager
+            model.SearchStoreId = _workContext.CurrentCustomer.StaffStoreId;
+
+            var products = await _productService.PrepareProductList(model.SearchCategoryId, model.SearchBrandId, model.SearchCollectionId, model.SearchStoreId, model.SearchVendorId, model.SearchProductTypeId, model.SearchProductName, pageIndex, pageSize);
+            return (products.Select(x => x.ToModel(_dateTimeService)).ToList(), products.TotalCount);
+        }
+        public virtual async Task<(IList<ProductModel> products, int totalCount)> PrepareProductModel(ProductModel.AddRecommendedProductModel model, int pageIndex, int pageSize)
         {
             //a vendor should have access only to his products
             if (_workContext.CurrentVendor != null)
@@ -1596,6 +1612,31 @@ namespace Grand.Web.Admin.Services
             };
             await _productService.DeleteCrossSellProduct(crosssell);
         }
+
+        public virtual async Task InsertRecommendedProductModel(ProductModel.AddRecommendedProductModel model)
+        {
+            var mainproduct = await _productService.GetProductById(model.ProductId, true);
+            foreach (var id in model.SelectedProductIds)
+            {
+                var product = await _productService.GetProductById(id);
+                if (product != null)
+                {
+                    //a vendor should have access only to his products
+                    if (_workContext.CurrentVendor != null && product.VendorId != _workContext.CurrentVendor.Id)
+                        continue;
+
+                    if (mainproduct.RecommendedProduct.Where(x => x == id).Count() == 0)
+                    {
+                        if (model.ProductId != id)
+                            await _productService.InsertRecommendedProduct(model.ProductId, id);
+                    }
+                }
+            }
+        }
+        public virtual async Task DeleteRecommendedProduct(string productId, string recommendedProductId)
+        {
+            await _productService.DeleteRecommendedProduct(productId, recommendedProductId);
+        }
         public virtual async Task InsertAssociatedProductModel(ProductModel.AddAssociatedProductModel model)
         {
             foreach (var id in model.SelectedProductIds)
@@ -1719,6 +1760,31 @@ namespace Grand.Web.Admin.Services
 
             return model;
         }
+        public virtual async Task<ProductModel.AddRecommendedProductModel> PrepareRecommendedProductModel()
+        {
+            var model = new ProductModel.AddRecommendedProductModel {
+                //a vendor should have access only to his products
+                IsLoggedInAsVendor = _workContext.CurrentVendor != null
+            };
+
+            var storeId = _workContext.CurrentCustomer.StaffStoreId;
+
+            //stores
+            model.AvailableStores.Add(new SelectListItem { Text = _translationService.GetResource("Admin.Common.All"), Value = " " });
+            foreach (var s in (await _storeService.GetAllStores()).Where(x => x.Id == storeId || string.IsNullOrWhiteSpace(storeId)))
+                model.AvailableStores.Add(new SelectListItem { Text = s.Shortcut, Value = s.Id.ToString() });
+
+            //vendors
+            model.AvailableVendors.Add(new SelectListItem { Text = _translationService.GetResource("Admin.Common.All"), Value = " " });
+            foreach (var v in await _vendorService.GetAllVendors(showHidden: true))
+                model.AvailableVendors.Add(new SelectListItem { Text = v.Name, Value = v.Id.ToString() });
+
+            //product types
+            model.AvailableProductTypes = ProductType.SimpleProduct.ToSelectList(_translationService, _workContext, false).ToList();
+            model.AvailableProductTypes.Insert(0, new SelectListItem { Text = _translationService.GetResource("Admin.Common.All"), Value = "0" });
+
+            return model;
+        }
         public virtual async Task<ProductModel.AddAssociatedProductModel> PrepareAssociatedProductModel()
         {
             var model = new ProductModel.AddAssociatedProductModel
@@ -1809,16 +1875,11 @@ namespace Grand.Web.Admin.Services
                     Sku = x.Sku,
                     OldPrice = x.OldPrice,
                     Price = x.Price,
+                    ManageInventoryMethodId = (int)x.ManageInventoryMethodId,
                     ManageInventoryMethod = x.ManageInventoryMethodId.GetTranslationEnum(_translationService, _workContext.WorkingLanguage.Id),
                     StockQuantity = x.StockQuantity,
                     Published = x.Published
                 };
-                if (x.ManageInventoryMethodId == ManageInventoryMethod.ManageStock && x.UseMultipleWarehouses)
-                {
-                    //multi-warehouse supported
-                    //TODO localize
-                    productModel.ManageInventoryMethod += " (multi-warehouse)";
-                }
                 return productModel;
             })), products.TotalCount);
         }
@@ -1849,6 +1910,7 @@ namespace Grand.Web.Admin.Services
                     product.StockQuantity = pModel.StockQuantity;
                     product.Published = pModel.Published;
                     product.Name = pModel.Name;
+                    product.ManageInventoryMethodId = (ManageInventoryMethod)pModel.ManageInventoryMethodId;
                     await _productService.UpdateProduct(product);
 
                     //out of stock notifications

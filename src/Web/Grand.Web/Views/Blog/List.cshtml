@@ -77,16 +77,16 @@
                                 @for (int i = 0; i < item.Tags.Count; i++)
                                 {
                                     var tag = item.Tags[i];
-                                    <button class="btn btn-sm btn-light my-1" href="@Url.RouteUrl("BlogByTag", new {tag = tag})">@tag</button>
+                                    <a class="btn btn-sm btn-light my-1" href="@Url.RouteUrl("BlogByTag", new {tag = tag})">@tag</a>
                                 }
                             </div>
                         }
                         <div class="buttons mt-3">
                             @if (item.AllowComments)
                             {
-                                <button href="@Url.RouteUrl("BlogPost", new {SeName = item.SeName})#comments" class="btn btn-secondary read-comments">@string.Format(Loc["Blog.CommentsLink"], item.NumberOfComments)</button>
+                                <a href="@Url.RouteUrl("BlogPost", new {SeName = item.SeName})#comments" class="btn btn-secondary read-comments">@string.Format(Loc["Blog.CommentsLink"], item.NumberOfComments)</a>
                             }
-                            <button href="@Url.RouteUrl("BlogPost", new {SeName = item.SeName})" class="btn btn-secondary read-more">@Loc["Blog.MoreInfo"]</button>
+                            <a href="@Url.RouteUrl("BlogPost", new {SeName = item.SeName})" class="btn btn-secondary read-more">@Loc["Blog.MoreInfo"]</a>
                         </div>
                     </div>
                     <div class="card-footer">

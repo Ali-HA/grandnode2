@@ -17,7 +17,6 @@ using Grand.Domain.Media;
 using Grand.Domain.Orders;
 using Grand.Infrastructure;
 using Grand.Web.Commands.Models.Products;
-using Grand.Web.Common.Controllers;
 using Grand.Web.Common.Filters;
 using Grand.Web.Common.Security.Captcha;
 using Grand.Web.Events;
@@ -164,8 +163,7 @@ namespace Grand.Web.Controllers
             }
 
             //prepare the model
-            var model = await _mediator.Send(new GetProductDetailsPage()
-            {
+            var model = await _mediator.Send(new GetProductDetailsPage() {
                 Store = _workContext.CurrentStore,
                 Product = product,
                 IsAssociatedProduct = false,
@@ -206,8 +204,7 @@ namespace Grand.Web.Controllers
             if (product == null)
                 return new JsonResult("");
 
-            var model = await _mediator.Send(new GetProductDetailsAttributeChange()
-            {
+            var model = await _mediator.Send(new GetProductDetailsAttributeChange() {
                 Currency = _workContext.WorkingCurrency,
                 Customer = _workContext.CurrentCustomer,
                 Store = _workContext.CurrentStore,
@@ -329,8 +326,7 @@ namespace Grand.Web.Controllers
                 }
             }
 
-            var download = new Download
-            {
+            var download = new Download {
                 DownloadGuid = Guid.NewGuid(),
                 UseDownloadUrl = false,
                 DownloadUrl = "",
@@ -424,8 +420,7 @@ namespace Grand.Web.Controllers
             }
 
             //prepare the model
-            var model = await _mediator.Send(new GetProductDetailsPage()
-            {
+            var model = await _mediator.Send(new GetProductDetailsPage() {
                 Store = _workContext.CurrentStore,
                 Product = product,
                 IsAssociatedProduct = false,
@@ -442,12 +437,13 @@ namespace Grand.Web.Controllers
             await _customerActivityService.InsertActivity("PublicStore.ViewProduct", product.Id, _translationService.GetResource("ActivityLog.PublicStore.ViewProduct"), product.Name);
             await _customerActionEventService.Viewed(customer, HttpContext.Request.Path.ToString(), Request.Headers[HeaderNames.Referer].ToString() != null ? Request.Headers[HeaderNames.Referer].ToString() : "");
             await _productService.UpdateMostView(product);
-            var qhtml = await this.RenderPartialViewToString(productLayoutViewPath + ".QuickView", model);
+
             return Json(new
             {
                 success = true,
                 product = true,
-                html = qhtml,
+                model = model,
+                layoutPath = productLayoutViewPath
             });
         }
         #endregion
@@ -464,8 +460,7 @@ namespace Grand.Web.Controllers
             var products = await _recentlyViewedProductsService.GetRecentlyViewedProducts(_workContext.CurrentCustomer.Id, _catalogSettings.RecentlyViewedProductsNumber);
 
             //prepare model
-            var model = await _mediator.Send(new GetProductOverview()
-            {
+            var model = await _mediator.Send(new GetProductOverview() {
                 Products = products,
             });
 
@@ -490,8 +485,7 @@ namespace Grand.Web.Controllers
 
 
             //prepare model
-            var model = await _mediator.Send(new GetProductOverview()
-            {
+            var model = await _mediator.Send(new GetProductOverview() {
                 PrepareSpecificationAttributes = _catalogSettings.ShowSpecAttributeOnCatalogPages,
                 Products = products,
             });
@@ -508,8 +502,7 @@ namespace Grand.Web.Controllers
             if (product == null || !product.Published || !product.AllowCustomerReviews)
                 return RedirectToRoute("HomePage");
 
-            var model = await _mediator.Send(new GetProductReviews()
-            {
+            var model = await _mediator.Send(new GetProductReviews() {
                 Customer = _workContext.CurrentCustomer,
                 Language = _workContext.WorkingLanguage,
                 Product = product,
@@ -553,8 +546,7 @@ namespace Grand.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var productReview = await _mediator.Send(new InsertProductReviewCommand()
-                {
+                var productReview = await _mediator.Send(new InsertProductReviewCommand() {
                     Customer = _workContext.CurrentCustomer,
                     Store = _workContext.CurrentStore,
                     Model = model,
@@ -570,8 +562,7 @@ namespace Grand.Web.Controllers
                 if (productReview.IsApproved)
                     await _mediator.Publish(new ProductReviewApprovedEvent(productReview));
 
-                model = await _mediator.Send(new GetProductReviews()
-                {
+                model = await _mediator.Send(new GetProductReviews() {
                     Customer = _workContext.CurrentCustomer,
                     Language = _workContext.WorkingLanguage,
                     Product = product,
@@ -592,8 +583,7 @@ namespace Grand.Web.Controllers
             }
 
             //If we got this far, something failed, redisplay form
-            var newmodel = await _mediator.Send(new GetProductReviews()
-            {
+            var newmodel = await _mediator.Send(new GetProductReviews() {
                 Customer = _workContext.CurrentCustomer,
                 Language = _workContext.WorkingLanguage,
                 Product = product,
@@ -651,8 +641,7 @@ namespace Grand.Web.Controllers
             else
             {
                 //insert new helpfulness
-                prh = new ProductReviewHelpfulness
-                {
+                prh = new ProductReviewHelpfulness {
                     ProductReviewId = productReview.Id,
                     CustomerId = _workContext.CurrentCustomer.Id,
                     WasHelpful = washelpful,
@@ -723,8 +712,7 @@ namespace Grand.Web.Controllers
             if (ModelState.IsValid)
             {
                 //email
-                await _mediator.Send(new SendProductEmailAFriendMessageCommand()
-                {
+                await _mediator.Send(new SendProductEmailAFriendMessageCommand() {
                     Customer = _workContext.CurrentCustomer,
                     Product = product,
                     Language = _workContext.WorkingLanguage,
@@ -760,8 +748,7 @@ namespace Grand.Web.Controllers
             if (product == null || !product.Published || !_catalogSettings.AskQuestionEnabled)
                 return NotFound();
 
-            var model = await _mediator.Send(new GetProductAskQuestion()
-            {
+            var model = await _mediator.Send(new GetProductAskQuestion() {
                 Product = product,
                 Customer = _workContext.CurrentCustomer,
                 Language = _workContext.WorkingLanguage,
@@ -789,8 +776,7 @@ namespace Grand.Web.Controllers
             if (ModelState.IsValid)
             {
                 // email
-                await _mediator.Send(new SendProductAskQuestionMessageCommand()
-                {
+                await _mediator.Send(new SendProductAskQuestionMessageCommand() {
                     Customer = _workContext.CurrentCustomer,
                     Language = _workContext.WorkingLanguage,
                     Store = _workContext.CurrentStore,
@@ -842,8 +828,7 @@ namespace Grand.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                var productaskqestionmodel = new ProductAskQuestionModel()
-                {
+                var productaskqestionmodel = new ProductAskQuestionModel() {
                     Email = model.AskQuestionEmail,
                     FullName = model.AskQuestionFullName,
                     Phone = model.AskQuestionPhone,
@@ -851,8 +836,7 @@ namespace Grand.Web.Controllers
                 };
 
                 // email
-                await _mediator.Send(new SendProductAskQuestionMessageCommand()
-                {
+                await _mediator.Send(new SendProductAskQuestionMessageCommand() {
                     Customer = _workContext.CurrentCustomer,
                     Language = _workContext.WorkingLanguage,
                     Store = _workContext.CurrentStore,
@@ -942,8 +926,7 @@ namespace Grand.Web.Controllers
             if (!_catalogSettings.CompareProductsEnabled)
                 return RedirectToRoute("HomePage");
 
-            var model = new CompareProductsModel
-            {
+            var model = new CompareProductsModel {
                 IncludeShortDescriptionInCompareProducts = _catalogSettings.IncludeShortDescriptionInCompareProducts,
                 IncludeFullDescriptionInCompareProducts = _catalogSettings.IncludeFullDescriptionInCompareProducts,
             };
@@ -955,8 +938,7 @@ namespace Grand.Web.Controllers
             //availability dates
             products = products.Where(p => p.IsAvailable()).ToList();
 
-            (await _mediator.Send(new GetProductOverview()
-            {
+            (await _mediator.Send(new GetProductOverview() {
                 PrepareSpecificationAttributes = true,
                 Products = products,
             })).ToList().ForEach(model.Products.Add);
