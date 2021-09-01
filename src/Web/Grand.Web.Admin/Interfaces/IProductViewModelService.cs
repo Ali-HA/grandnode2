@@ -1,4 +1,5 @@
 ﻿using Grand.Domain.Catalog;
+using Grand.Domain.Media;
 using Grand.Web.Admin.Models.Catalog;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -98,8 +99,9 @@ namespace Grand.Web.Admin.Interfaces
         Task DeleteProductAttributeCombinationTierPrices(Product product, ProductAttributeCombination productAttributeCombination, ProductCombinationTierPrices tierPrice);
 
         //Pictures
-        Task<IList<ProductModel.ProductPictureModel>> PrepareProductPictureModel(Product product);
-        Task InsertProductPicture(Product product, string pictureId, int displayOrder, string overrideAltAttribute, string overrideTitleAttribute);
+        Task<IList<ProductModel.ProductPictureModel>> PrepareProductPicturesModel(Product product);
+        Task<(ProductModel.ProductPictureModel model, Picture Picture)> PrepareProductPictureModel(Product product, ProductPicture productPicture);
+        Task InsertProductPicture(Product product, Picture picture, int displayOrder);
         Task UpdateProductPicture(ProductModel.ProductPictureModel model);
         Task DeleteProductPicture(ProductModel.ProductPictureModel model);
 

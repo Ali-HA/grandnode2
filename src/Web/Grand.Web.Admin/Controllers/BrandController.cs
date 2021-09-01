@@ -10,6 +10,7 @@ using Grand.Infrastructure;
 using Grand.Web.Admin.Extensions;
 using Grand.Web.Admin.Interfaces;
 using Grand.Web.Admin.Models.Catalog;
+using Grand.Web.Admin.Models.Common;
 using Grand.Web.Common.DataSource;
 using Grand.Web.Common.Filters;
 using Grand.Web.Common.Security.Authorization;
@@ -35,6 +36,7 @@ namespace Grand.Web.Admin.Controllers
         private readonly IGroupService _groupService;
         private readonly IExportManager _exportManager;
         private readonly IImportManager _importManager;
+        private readonly IPictureViewModelService _pictureViewModelService;
         #endregion
 
         #region Constructors
@@ -48,7 +50,8 @@ namespace Grand.Web.Admin.Controllers
             ITranslationService translationService,
             IGroupService groupService,
             IExportManager exportManager,
-            IImportManager importManager)
+            IImportManager importManager,
+            IPictureViewModelService pictureViewModelService)
         {
             _brandViewModelService = brandViewModelService;
             _brandService = brandService;
@@ -59,13 +62,14 @@ namespace Grand.Web.Admin.Controllers
             _groupService = groupService;
             _exportManager = exportManager;
             _importManager = importManager;
+            _pictureViewModelService = pictureViewModelService;
         }
 
         #endregion
 
         #region Utilities
 
-        protected async Task<(bool allow, string message)> CheckAccessToCollection(Brand brand)
+        protected async Task<(bool allow, string message)> CheckAccessToBrand(Brand brand)
         {
             if (brand == null)
             {
@@ -106,8 +110,7 @@ namespace Grand.Web.Admin.Controllers
             }
             var brands = await _brandService.GetAllBrands(model.SearchBrandName,
                 model.SearchStoreId, command.Page - 1, command.PageSize, true);
-            var gridModel = new DataSourceResult
-            {
+            var gridModel = new DataSourceResult {
                 Data = brands.Select(x => x.ToModel()),
                 Total = brands.TotalCount
             };
@@ -281,6 +284,58 @@ namespace Grand.Web.Admin.Controllers
 
         #endregion
 
+        #region Picture
+
+        [PermissionAuthorizeAction(PermissionActionName.Preview)]
+        public async Task<IActionResult> PicturePopup(string brandId)
+        {
+            var brand = await _brandService.GetBrandById(brandId);
+            if (brand == null)
+                return Content("Brand not exist");
+
+            if (string.IsNullOrEmpty(brand.PictureId))
+                return Content("Picture not exist");
+
+            var permission = await CheckAccessToBrand(brand);
+            if (!permission.allow)
+                return Content(permission.message);
+
+            return View("PicturePopup", await _pictureViewModelService.PreparePictureModel(brand.PictureId, brand.Id));
+        }
+
+        [PermissionAuthorizeAction(PermissionActionName.Edit)]
+        [HttpPost]
+        public async Task<IActionResult> PicturePopup(PictureModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var brand = await _brandService.GetBrandById(model.ObjectId);
+                if (brand == null)
+                    throw new ArgumentException("No brand found with the specified id");
+
+                var permission = await CheckAccessToBrand(brand);
+                if (!permission.allow)
+                    return Content(permission.message);
+
+                if (string.IsNullOrEmpty(brand.PictureId))
+                    throw new ArgumentException("No picture found with the specified id");
+
+                if (brand.PictureId != model.Id)
+                    throw new ArgumentException("Picture ident doesn't fit with brand");
+
+                await _pictureViewModelService.UpdatePicture(model);
+
+                ViewBag.RefreshPage = true;
+                return View("PicturePopup", model);
+            }
+
+            Error(ModelState);
+
+            return View("PicturePopup", model);
+        }
+
+        #endregion
+
         #region Export / Import
 
         [PermissionAuthorizeAction(PermissionActionName.Export)]
@@ -335,13 +390,12 @@ namespace Grand.Web.Admin.Controllers
         public async Task<IActionResult> ListActivityLog(DataSourceRequest command, string brandId)
         {
             var brand = await _brandService.GetBrandById(brandId);
-            var permission = await CheckAccessToCollection(brand);
+            var permission = await CheckAccessToBrand(brand);
             if (!permission.allow)
                 return ErrorForKendoGridJson(permission.message);
 
             var (activityLogModels, totalCount) = await _brandViewModelService.PrepareActivityLogModel(brandId, command.Page, command.PageSize);
-            var gridModel = new DataSourceResult
-            {
+            var gridModel = new DataSourceResult {
                 Data = activityLogModels.ToList(),
                 Total = totalCount
             };

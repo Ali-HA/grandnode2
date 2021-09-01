@@ -1,3 +1,4 @@
+using Grand.Business.Checkout.Services.Orders;
 using Grand.Domain.Catalog;
 using Grand.Domain.Common;
 using Grand.Domain.Customers;
@@ -46,21 +47,28 @@ namespace Grand.Business.Checkout.Interfaces.Orders
         /// Add a product to shopping cart
         /// </summary>
         /// <param name="customer">Customer</param>
-        /// <param name="product">Product</param>
-        /// <param name="shoppingCartType">Shopping cart type</param>
-        /// <param name="storeId">Store identifier</param>
+        /// <param name="productId">Product id</param>
+        /// <param name="shoppingCartType">ShoppingCartType</param>
+        /// <param name="storeId">Store id</param>
+        /// <param name="warehouseId">Warehouse id</param>
         /// <param name="attributes">Attributes</param>
-        /// <param name="customerEnteredPrice">The price enter by a customer</param>
-        /// <param name="rentalStartDate">Rental start date</param>
-        /// <param name="rentalEndDate">Rental end date</param>
+        /// <param name="customerEnteredPrice">EnteredPrice</param>
+        /// <param name="rentalStartDate">RentalStartDate</param>
+        /// <param name="rentalEndDate">RentalEndDate</param>
         /// <param name="quantity">Quantity</param>
-        /// <param name="automaticallyAddRequiredProductsIfEnabled">Automatically add required products if enabled</param>
-        /// <returns>Warnings</returns>
-        Task<IList<string>> AddToCart(Customer customer, string productId,
+        /// <param name="automaticallyAddRequiredProductsIfEnabled">AutomaticallyAddRequiredProductsIfEnabled</param>
+        /// <param name="reservationId">ReservationId</param>
+        /// <param name="parameter">Parameter for reservation</param>
+        /// <param name="duration">Duration for reservation</param>
+        /// <param name="validator">ShoppingCartValidatorOptions</param>
+        /// <returns>(warnings, shoppingCartItem)</returns>
+        Task<(IList<string> warnings, ShoppingCartItem shoppingCartItem)> AddToCart(Customer customer, string productId,
             ShoppingCartType shoppingCartType, string storeId, string warehouseId = null, IList<CustomAttribute> attributes = null,
             double? customerEnteredPrice = null,
             DateTime? rentalStartDate = null, DateTime? rentalEndDate = null,
-            int quantity = 1, bool automaticallyAddRequiredProductsIfEnabled = true, string reservationId = "", string parameter = "", string duration = "", bool getRequiredProductWarnings = true);
+            int quantity = 1, 
+            bool automaticallyAddRequiredProductsIfEnabled = true, string reservationId = "", string parameter = "", string duration = "",
+            ShoppingCartValidatorOptions validator = null);
 
         /// <summary>
         /// Updates the shopping cart item

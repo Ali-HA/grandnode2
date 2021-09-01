@@ -173,32 +173,39 @@ namespace Grand.Business.Checkout.Services.Orders
             return null;
         }
 
-
         /// <summary>
         /// Add a product to shopping cart
         /// </summary>
         /// <param name="customer">Customer</param>
-        /// <param name="product">Product</param>
-        /// <param name="shoppingCartType">Shopping cart type</param>
-        /// <param name="storeId">Store identifier</param>
+        /// <param name="productId">Product id</param>
+        /// <param name="shoppingCartType">ShoppingCartType</param>
+        /// <param name="storeId">Store id</param>
+        /// <param name="warehouseId">Warehouse id</param>
         /// <param name="attributes">Attributes</param>
-        /// <param name="customerEnteredPrice">The price enter by a customer</param>
-        /// <param name="rentalStartDate">Rental start date</param>
-        /// <param name="rentalEndDate">Rental end date</param>
+        /// <param name="customerEnteredPrice">EnteredPrice</param>
+        /// <param name="rentalStartDate">RentalStartDate</param>
+        /// <param name="rentalEndDate">RentalEndDate</param>
         /// <param name="quantity">Quantity</param>
-        /// <param name="automaticallyAddRequiredProductsIfEnabled">Automatically add required products if enabled</param>
-        /// <returns>Warnings</returns>
-        public virtual async Task<IList<string>> AddToCart(Customer customer, string productId,
+        /// <param name="automaticallyAddRequiredProductsIfEnabled">AutomaticallyAddRequiredProductsIfEnabled</param>
+        /// <param name="reservationId">ReservationId</param>
+        /// <param name="parameter">Parameter for reservation</param>
+        /// <param name="duration">Duration for reservation</param>
+        /// <param name="validator">ShoppingCartValidatorOptions</param>
+        /// <returns>(warnings, shoppingCartItem)</returns>
+        public virtual async Task<(IList<string> warnings, ShoppingCartItem shoppingCartItem)> AddToCart(Customer customer, string productId,
             ShoppingCartType shoppingCartType, string storeId,
             string warehouseId = null, IList<CustomAttribute> attributes = null,
             double? customerEnteredPrice = null,
             DateTime? rentalStartDate = null, DateTime? rentalEndDate = null,
             int quantity = 1, bool automaticallyAddRequiredProductsIfEnabled = true,
             string reservationId = "", string parameter = "", string duration = "",
-            bool getRequiredProductWarnings = true)
+            ShoppingCartValidatorOptions validator = null)
         {
             if (customer == null)
                 throw new ArgumentNullException(nameof(customer));
+
+            if (validator == null)
+                validator = new ShoppingCartValidatorOptions();
 
             var product = await _productService.GetProductById(productId);
             if (product == null)
@@ -213,7 +220,7 @@ namespace Grand.Business.Checkout.Services.Orders
                 rentalEndDate, quantity, reservationId)).ToList();
 
             if (warnings.Any())
-                return warnings;
+                return (warnings, null);
 
             var shoppingCartItem = await FindShoppingCartItem(cart,
                 shoppingCartType, productId, warehouseId, attributes, customerEnteredPrice,
@@ -225,7 +232,7 @@ namespace Grand.Business.Checkout.Services.Orders
             if (update)
             {
                 shoppingCartItem.Quantity += quantity;
-                warnings.AddRange(await _shoppingCartValidator.GetShoppingCartItemWarnings(customer, shoppingCartItem, product, new ShoppingCartValidatorOptions() { GetRequiredProductWarnings = getRequiredProductWarnings }));
+                warnings.AddRange(await _shoppingCartValidator.GetShoppingCartItemWarnings(customer, shoppingCartItem, product, validator));
             }
             else
             {
@@ -254,9 +261,7 @@ namespace Grand.Business.Checkout.Services.Orders
                 };
 
                 warnings.AddRange(await _shoppingCartValidator.GetShoppingCartItemWarnings
-                    (customer, shoppingCartItem, product,
-                    new ShoppingCartValidatorOptions()
-                    { GetRequiredProductWarnings = getRequiredProductWarnings }));
+                    (customer, shoppingCartItem, product, validator));
             }
 
             if (!warnings.Any())
@@ -264,7 +269,7 @@ namespace Grand.Business.Checkout.Services.Orders
                 if (update)
                 {
                     //update existing shopping cart item
-                    await UpdateExistingShoppingCartItem(shoppingCartItem, quantity, customer, product, attributes, getRequiredProductWarnings);
+                    await UpdateExistingShoppingCartItem(shoppingCartItem, customer, attributes);
                 }
                 else
                 {
@@ -277,11 +282,11 @@ namespace Grand.Business.Checkout.Services.Orders
                 await _customerService.ResetCheckoutData(customer, storeId);
             }
 
-            return warnings;
+            return (warnings, shoppingCartItem);
         }
 
-        private async Task UpdateExistingShoppingCartItem(ShoppingCartItem shoppingCartItem, int quantity, Customer customer,
-            Product product, IList<CustomAttribute> attributes, bool getRequiredProductWarnings)
+        private async Task UpdateExistingShoppingCartItem(ShoppingCartItem shoppingCartItem, Customer customer,
+            IList<CustomAttribute> attributes)
         {
             shoppingCartItem.Attributes = attributes;
             shoppingCartItem.UpdatedOnUtc = DateTime.UtcNow;
@@ -556,7 +561,8 @@ namespace Grand.Business.Checkout.Services.Orders
                 var sci = fromCart[i];
                 await AddToCart(toCustomer, sci.ProductId, sci.ShoppingCartTypeId, sci.StoreId, sci.WarehouseId,
                     sci.Attributes, sci.EnteredPrice,
-                    sci.RentalStartDateUtc, sci.RentalEndDateUtc, sci.Quantity, false, sci.ReservationId, sci.Parameter, sci.Duration);
+                    sci.RentalStartDateUtc, sci.RentalEndDateUtc, sci.Quantity, false, sci.ReservationId, sci.Parameter, sci.Duration,
+                    new ShoppingCartValidatorOptions());
             }
             for (int i = 0; i < fromCart.Count; i++)
             {

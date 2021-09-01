@@ -64,7 +64,6 @@ namespace Grand.Web.Admin.Controllers
         private readonly ICustomerActivityService _customerActivityService;
         private readonly IStoreService _storeService;
         private readonly IWorkContext _workContext;
-        private readonly IUserFieldService _userFieldService;
         private readonly IMediator _mediator;
         private readonly IMerchandiseReturnService _merchandiseReturnService;
         private readonly ILanguageService _languageService;
@@ -76,20 +75,14 @@ namespace Grand.Web.Admin.Controllers
         #region Constructors
 
         public SettingController(ISettingService settingService,
-            ICountryService countryService,
-            ITaxCategoryService taxCategoryService,
             ICurrencyService currencyService,
             IPictureService pictureService,
             ITranslationService translationService,
             IDateTimeService dateTimeService,
-            IOrderService orderService,
-            IEncryptionService encryptionService,
             IThemeProvider themeProvider,
-            ICustomerService customerService,
             ICustomerActivityService customerActivityService,
             IStoreService storeService,
             IWorkContext workContext,
-            IUserFieldService userFieldService,
             IMediator mediator,
             IMerchandiseReturnService merchandiseReturnService,
             ILanguageService languageService,
@@ -105,7 +98,6 @@ namespace Grand.Web.Admin.Controllers
             _customerActivityService = customerActivityService;
             _storeService = storeService;
             _workContext = workContext;
-            _userFieldService = userFieldService;
             _mediator = mediator;
             _merchandiseReturnService = merchandiseReturnService;
             _languageService = languageService;
@@ -123,30 +115,6 @@ namespace Grand.Web.Admin.Controllers
             await _cacheBase.Clear();
         }
 
-        public async Task<IActionResult> ChangeStore(string storeid, string returnUrl = "")
-        {
-            if (storeid != null)
-                storeid = storeid.Trim();
-
-            var store = await _storeService.GetStoreById(storeid);
-            if (store != null || storeid == "")
-            {
-                await _userFieldService.SaveField(_workContext.CurrentCustomer,
-                    SystemCustomerFieldNames.AdminAreaStoreScopeConfiguration, storeid);
-            }
-            else
-                await _userFieldService.SaveField(_workContext.CurrentCustomer,
-                    SystemCustomerFieldNames.AdminAreaStoreScopeConfiguration, "");
-
-
-            //home page
-            if (String.IsNullOrEmpty(returnUrl))
-                returnUrl = Url.Action("Index", "Home", new { area = Constants.AreaAdmin });
-            //prevent open redirection attack
-            if (!Url.IsLocalUrl(returnUrl))
-                return RedirectToAction("Index", "Home", new { area = Constants.AreaAdmin });
-            return Redirect(returnUrl);
-        }
         public async Task<IActionResult> Content()
         {
             //load settings for a chosen store scope
@@ -1071,11 +1039,22 @@ namespace Grand.Web.Admin.Controllers
             //now clear cache
             await ClearCache();
 
+            //save to file
+            SavePushNotificationsToFile(model);
+
+            Success(_translationService.GetResource("Admin.Configuration.Updated"));
+            return await PushNotifications();
+        }
+
+        private void SavePushNotificationsToFile(ConfigurationModel model)
+        {
             //edit js file needed by firebase
-            var jsFilePath = CommonPath.WebMapPath("firebase-messaging-sw.js");
-            if (System.IO.File.Exists(jsFilePath))
+            var filename = "firebase-messaging-sw.js";
+            var oryginalFilePath = CommonPath.WebHostMapPath(filename);
+            var savedFilePath = CommonPath.WebMapPath(filename);
+            if (System.IO.File.Exists(oryginalFilePath))
             {
-                string[] lines = System.IO.File.ReadAllLines(jsFilePath);
+                string[] lines = System.IO.File.ReadAllLines(oryginalFilePath);
 
                 int i = 0;
                 foreach (var line in lines)
@@ -1117,14 +1096,12 @@ namespace Grand.Web.Admin.Controllers
 
                     i++;
                 }
-
-                System.IO.File.WriteAllLines(jsFilePath, lines);
+                System.IO.File.WriteAllLines(savedFilePath, lines);
             }
+            else
+                throw new ArgumentNullException($"{oryginalFilePath} not exist");
 
-            Success(_translationService.GetResource("Admin.Configuration.Updated"));
-            return await PushNotifications();
         }
-
         public IActionResult AdminSearch()
         {
             var settings = _settingService.LoadSetting<AdminSearchSettings>();

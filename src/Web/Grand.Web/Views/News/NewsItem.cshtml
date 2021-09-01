@@ -13,7 +13,7 @@
         <div class="card-header">
             @if (!string.IsNullOrEmpty(Model.PictureModel.ImageUrl))
             {
-                <b-img-lazy class="img-fluid" src="@Model.PictureModel.ImageUrl" alt="@Model.PictureModel.AlternateText" />
+                <b-img-lazy class="img-fluid mb-3" src="@Model.PictureModel.ImageUrl" alt="@Model.PictureModel.AlternateText"></b-img-lazy>
             }
             <h1 class="h5 mb-0">
                 @Model.Title
@@ -74,26 +74,26 @@
                 <div class="comments">
                     @foreach (var comment in Model.Comments)
                     {
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <div class="d-inline-flex w-100">
-                                <h6 class="mb-0">@comment.CustomerName</h6>
-                                <b-icon icon="calendar2-check" variant="info" class="mx-2"></b-icon>
-                                <small class="date text-muted">
-                                    <span>@Loc["News.Comments.CreatedOn"]:</span>
-                                    <span>@comment.CreatedOn.ToString("g")</span>
-                                </small>
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <div class="d-inline-flex w-100">
+                                    <h6 class="mb-0">@comment.CustomerName</h6>
+                                    <b-icon icon="calendar2-check" variant="info" class="mx-2"></b-icon>
+                                    <small class="date text-muted">
+                                        <span>@Loc["News.Comments.CreatedOn"]:</span>
+                                        <span>@comment.CreatedOn.ToString("g")</span>
+                                    </small>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-12 px-0">
-                            <div class="row">
-                                <div class="col">
-                                    <h5>@comment.CommentTitle</h5>
-                                    @comment.CommentText
+                            <div class="col-12 px-0">
+                                <div class="row">
+                                    <div class="col">
+                                        <h5>@comment.CommentTitle</h5>
+                                        @comment.CommentText
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
                     }
                 </div>
             </div>

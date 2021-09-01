@@ -1,6 +1,5 @@
 ﻿using Grand.Business.Catalog.Interfaces.Categories;
 using Grand.Business.Catalog.Interfaces.Discounts;
-using Grand.Business.Catalog.Interfaces.Collections;
 using Grand.Business.Catalog.Interfaces.Products;
 using Grand.Business.Common.Extensions;
 using Grand.Business.Common.Interfaces.Directory;
@@ -13,10 +12,10 @@ using Grand.Business.Storage.Interfaces;
 using Grand.Domain.Catalog;
 using Grand.Domain.Discounts;
 using Grand.Domain.Seo;
-using Grand.Web.Common.Extensions;
 using Grand.Web.Admin.Extensions;
 using Grand.Web.Admin.Interfaces;
 using Grand.Web.Admin.Models.Catalog;
+using Grand.Web.Common.Extensions;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System;
 using System.Collections.Generic;
@@ -34,7 +33,6 @@ namespace Grand.Web.Admin.Services
         private readonly ITranslationService _translationService;
         private readonly IStoreService _storeService;
         private readonly ICustomerService _customerService;
-        private readonly IGroupService _groupService;
         private readonly ISlugService _slugService;
         private readonly IPictureService _pictureService;
         private readonly ICustomerActivityService _customerActivityService;
@@ -46,8 +44,8 @@ namespace Grand.Web.Admin.Services
         private readonly SeoSettings _seoSettings;
 
         public CategoryViewModelService(ICategoryService categoryService, IProductCategoryService productCategoryService, ICategoryLayoutService categoryLayoutService, IDiscountService discountService,
-            ITranslationService translationService, IStoreService storeService, ICustomerService customerService, IGroupService groupService, IPictureService pictureService,
-            ISlugService slugService, ICustomerActivityService customerActivityService, IProductService productService, 
+            ITranslationService translationService, IStoreService storeService, ICustomerService customerService, IPictureService pictureService,
+            ISlugService slugService, ICustomerActivityService customerActivityService, IProductService productService,
             IVendorService vendorService, IDateTimeService dateTimeService, ILanguageService languageService, CatalogSettings catalogSettings, SeoSettings seoSettings)
         {
             _categoryService = categoryService;
@@ -57,7 +55,6 @@ namespace Grand.Web.Admin.Services
             _translationService = translationService;
             _storeService = storeService;
             _customerService = customerService;
-            _groupService = groupService;
             _slugService = slugService;
             _customerActivityService = customerActivityService;
             _productService = productService;
@@ -77,8 +74,7 @@ namespace Grand.Web.Admin.Services
             var layouts = await _categoryLayoutService.GetAllCategoryLayouts();
             foreach (var layout in layouts)
             {
-                model.AvailableCategoryLayouts.Add(new SelectListItem
-                {
+                model.AvailableCategoryLayouts.Add(new SelectListItem {
                     Text = layout.Name,
                     Value = layout.Id
                 });
@@ -121,10 +117,10 @@ namespace Grand.Web.Admin.Services
         public virtual async Task<(IEnumerable<CategoryModel> categoryListModel, int totalCount)> PrepareCategoryListModel(CategoryListModel model, int pageIndex, int pageSize)
         {
             var categories = await _categoryService.GetAllCategories(
-                categoryName: model.SearchCategoryName, 
+                categoryName: model.SearchCategoryName,
                 storeId: model.SearchStoreId,
                 pageSize: pageSize,
-                pageIndex: pageIndex - 1, 
+                pageIndex: pageIndex - 1,
                 showHidden: true);
 
             var categoryListModel = new List<CategoryModel>();
@@ -248,6 +244,7 @@ namespace Grand.Web.Admin.Services
             //activity log
             await _customerActivityService.InsertActivity("DeleteCategory", category.Id, _translationService.GetResource("ActivityLog.DeleteCategory"), category.Name);
         }
+
         public virtual async Task<(IEnumerable<CategoryModel.CategoryProductModel> categoryProductModels, int totalCount)> PrepareCategoryProductModel(string categoryId, int pageIndex, int pageSize)
         {
             var productCategories = await _productCategoryService.GetProductCategoriesByCategoryId(categoryId,
@@ -256,8 +253,7 @@ namespace Grand.Web.Admin.Services
             var categoryproducts = new List<CategoryModel.CategoryProductModel>();
             foreach (var item in productCategories)
             {
-                var pc = new CategoryModel.CategoryProductModel
-                {
+                var pc = new CategoryModel.CategoryProductModel {
                     Id = item.Id,
                     CategoryId = item.CategoryId,
                     ProductId = item.ProductId,
@@ -323,8 +319,7 @@ namespace Grand.Web.Admin.Services
                     if (product.ProductCategories.Where(x => x.CategoryId == model.CategoryId).Count() == 0)
                     {
                         await _productCategoryService.InsertProductCategory(
-                            new ProductCategory
-                            {
+                            new ProductCategory {
                                 CategoryId = model.CategoryId,
                                 IsFeaturedProduct = false,
                                 DisplayOrder = 1,
@@ -340,8 +335,7 @@ namespace Grand.Web.Admin.Services
             foreach (var item in activityLog)
             {
                 var customer = await _customerService.GetCustomerById(item.CustomerId);
-                var m = new CategoryModel.ActivityLogModel
-                {
+                var m = new CategoryModel.ActivityLogModel {
                     Id = item.Id,
                     ActivityLogTypeName = (await _customerActivityService.GetActivityTypeById(item.ActivityLogTypeId))?.Name,
                     Comment = item.Comment,

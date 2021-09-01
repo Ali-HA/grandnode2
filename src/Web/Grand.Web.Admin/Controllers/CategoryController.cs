@@ -11,6 +11,7 @@ using Grand.Infrastructure;
 using Grand.Web.Admin.Extensions;
 using Grand.Web.Admin.Interfaces;
 using Grand.Web.Admin.Models.Catalog;
+using Grand.Web.Admin.Models.Common;
 using Grand.Web.Common.DataSource;
 using Grand.Web.Common.Filters;
 using Grand.Web.Common.Security.Authorization;
@@ -37,7 +38,7 @@ namespace Grand.Web.Admin.Controllers
         private readonly IWorkContext _workContext;
         private readonly IGroupService _groupService;
         private readonly IImportManager _importManager;
-
+        private readonly IPictureViewModelService _pictureViewModelService;
         #endregion
 
         #region Constructors
@@ -52,7 +53,8 @@ namespace Grand.Web.Admin.Controllers
             IExportManager exportManager,
             IWorkContext workContext,
             IGroupService groupService,
-            IImportManager importManager)
+            IImportManager importManager,
+            IPictureViewModelService pictureViewModelService)
         {
             _categoryService = categoryService;
             _categoryViewModelService = categoryViewModelService;
@@ -64,6 +66,7 @@ namespace Grand.Web.Admin.Controllers
             _workContext = workContext;
             _groupService = groupService;
             _importManager = importManager;
+            _pictureViewModelService = pictureViewModelService;
         }
 
         #endregion
@@ -251,6 +254,54 @@ namespace Grand.Web.Admin.Controllers
             return RedirectToAction("List");
         }
 
+
+        #endregion
+
+        #region Picture
+
+        [PermissionAuthorizeAction(PermissionActionName.Preview)]
+        public async Task<IActionResult> PicturePopup(string categoryId)
+        {
+            var category = await _categoryService.GetCategoryById(categoryId);
+            if (category == null)
+                return Content("Category not exist");
+
+            if (string.IsNullOrEmpty(category.PictureId))
+                return Content("Picture not exist");
+
+            var permission = await CheckAccessToCategory(category);
+            if (!permission.allow)
+                return Content(permission.message);
+
+            return View("PicturePopup", await _pictureViewModelService.PreparePictureModel(category.PictureId, category.Id));
+        }
+
+        [PermissionAuthorizeAction(PermissionActionName.Edit)]
+        [HttpPost]
+        public async Task<IActionResult> PicturePopup(PictureModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var category = await _categoryService.GetCategoryById(model.ObjectId);
+                if (category == null)
+                    throw new ArgumentException("No category found with the specified id");
+
+                if (string.IsNullOrEmpty(category.PictureId))
+                    throw new ArgumentException("No picture found with the specified id");
+
+                if (category.PictureId != model.Id)
+                    throw new ArgumentException("Picture ident doesn't fit with category");
+
+                await _pictureViewModelService.UpdatePicture(model);
+
+                ViewBag.RefreshPage = true;
+                return View("PicturePopup", model);
+            }
+
+            Error(ModelState);
+
+            return View("PicturePopup", model);
+        }
 
         #endregion
 

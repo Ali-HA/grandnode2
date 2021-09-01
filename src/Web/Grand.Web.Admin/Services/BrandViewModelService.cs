@@ -91,8 +91,7 @@ namespace Grand.Web.Admin.Services
             var layouts = await _brandLayoutService.GetAllBrandLayouts();
             foreach (var layout in layouts)
             {
-                model.AvailableBrandLayouts.Add(new SelectListItem
-                {
+                model.AvailableBrandLayouts.Add(new SelectListItem {
                     Text = layout.Name,
                     Value = layout.Id
                 });
@@ -100,7 +99,7 @@ namespace Grand.Web.Admin.Services
         }
 
 
-        public virtual async Task PrepareDiscountModel(BrandModel model, Brand Brand, bool excludeProperties)
+        public virtual async Task PrepareDiscountModel(BrandModel model, Brand brand, bool excludeProperties)
         {
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
@@ -110,9 +109,9 @@ namespace Grand.Web.Admin.Services
                 .Select(d => d.ToModel(_dateTimeService))
                 .ToList();
 
-            if (!excludeProperties && Brand != null)
+            if (!excludeProperties && brand != null)
             {
-                model.SelectedDiscountIds = Brand.AppliedDiscounts.ToArray();
+                model.SelectedDiscountIds = brand.AppliedDiscounts.ToArray();
             }
         }
 
@@ -205,8 +204,7 @@ namespace Grand.Web.Admin.Services
             foreach (var x in activityLog)
             {
                 var customer = await _customerService.GetCustomerById(x.CustomerId);
-                var m = new BrandModel.ActivityLogModel
-                {
+                var m = new BrandModel.ActivityLogModel {
                     Id = x.Id,
                     ActivityLogTypeName = (await _customerActivityService.GetActivityTypeById(x.ActivityLogTypeId))?.Name,
                     Comment = x.Comment,

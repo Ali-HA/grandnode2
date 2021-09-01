@@ -18,6 +18,7 @@ using Grand.Infrastructure.Extensions;
 using Grand.Business.Common.Extensions;
 using Grand.SharedKernel.Extensions;
 using Grand.Domain.Common;
+using System.Linq.Expressions;
 
 namespace Grand.Business.Storage.Services
 {
@@ -43,6 +44,9 @@ namespace Grand.Business.Storage.Services
 
         //Used for thumb images
         private readonly string _thumbPath;
+
+        //path to the no image file
+        private readonly string _path_no_image = "assets/images/no-image.png";
 
         #endregion
 
@@ -145,10 +149,13 @@ namespace Grand.Business.Storage.Services
                 {
                     try
                     {
-                        if (!File.Exists(currentFileName))
+                        if (File.Exists(currentFileName))
                             File.Delete(currentFileName);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _logger.InsertLog(Domain.Logging.LogLevel.Error, ex.Message);
+                    }
                 }
             }
             return Task.CompletedTask;
@@ -281,7 +288,7 @@ namespace Grand.Business.Storage.Services
             var filePath = await GetPicturePhysicalPath(_mediaSettings.DefaultImageName);
             if (string.IsNullOrEmpty(filePath))
             {
-                return "";
+                return _path_no_image;
             }
             if (targetSize == 0)
             {
@@ -484,7 +491,8 @@ namespace Grand.Business.Storage.Services
                             SeoFilename = p.SeoFilename,
                             TitleAttribute = p.TitleAttribute,
                             Reference = p.Reference,
-                            ObjectId = p.ObjectId
+                            ObjectId = p.ObjectId,
+                            Locales = p.Locales
                         });
                 return await Task.FromResult(query.FirstOrDefault());
             });
@@ -691,6 +699,26 @@ namespace Grand.Business.Storage.Services
         }
 
         /// <summary>
+        /// Updates the picture
+        /// </summary>
+        /// <param name="picture">Picture</param>
+        /// <returns>Picture</returns>
+        public virtual async Task UpdatField<T>(Picture picture, Expression<Func<Picture, T>> expression, T value)
+        {
+            if (picture == null)
+                throw new ArgumentNullException(nameof(picture));
+
+            await _pictureRepository.UpdateField<T>(picture.Id, expression, value);
+
+            //event notification
+            await _mediator.EntityUpdated(picture);
+
+            //clare cache
+            await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
+
+        }
+        
+        /// <summary>
         /// Save picture on file system
         /// </summary>
         /// <param name="pictureId">Picture identifier</param>
@@ -715,27 +743,26 @@ namespace Grand.Business.Storage.Services
         /// <summary>
         /// Updates a SEO filename of a picture
         /// </summary>
-        /// <param name="pictureId">The picture identifier</param>
+        /// <param name="picture">The picture</param>
         /// <param name="seoFilename">The SEO filename</param>
         /// <returns>Picture</returns>
-        public virtual async Task<Picture> SetSeoFilename(string pictureId, string seoFilename)
+        public virtual async Task<Picture> SetSeoFilename(Picture picture, string seoFilename)
         {
-            var picture = await GetPictureById(pictureId);
             if (picture == null)
                 throw new ArgumentException("No picture found with the specified id");
 
             //update if it has been changed
             if (seoFilename != picture.SeoFilename)
             {
-                //update picture
-                picture = await UpdatePicture(picture.Id,
-                    await LoadPictureBinary(picture),
-                    picture.MimeType,
-                    seoFilename,
-                    picture.AltAttribute,
-                    picture.TitleAttribute,
-                    true,
-                    false);
+                //update SeoFilename picture
+                picture.SeoFilename = seoFilename;
+                await UpdatField(picture, p=> p.SeoFilename, seoFilename);
+
+                //event notification
+                await _mediator.EntityUpdated(picture);
+
+                //clare cache
+                await _cacheBase.RemoveByPrefix(string.Format(CacheKey.PICTURE_BY_ID, picture.Id));
             }
             return picture;
         }

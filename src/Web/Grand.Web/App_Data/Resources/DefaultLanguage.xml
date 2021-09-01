@@ -2490,6 +2490,15 @@
   <Resource Name="Admin.Catalog.Collections.Updated">
     <Value>The collection has been updated successfully.</Value>
   </Resource>
+  <Resource Name="Admin.Catalog.Picture">
+    <Value>Picture</Value>
+  </Resource>
+  <Resource Name="Admin.Catalog.Picture.Fields.AltAttribute">
+    <Value>Picture alternate text</Value>
+  </Resource>
+  <Resource Name="Admin.Catalog.Picture.Fields.TitleAttribute">
+    <Value>Picture title</Value>
+  </Resource>
   <Resource Name="Admin.Catalog.ProductReservations.CantDeleteWithOrder">
     <Value>You can't delete reservation with the order</Value>
   </Resource>
@@ -3336,6 +3345,9 @@
   <Resource Name="Admin.Catalog.Products.Pictures.AddNew">
     <Value>Add a new picture</Value>
   </Resource>
+  <Resource Name="Admin.Catalog.Products.Pictures.Details">
+    <Value>Picture details</Value>
+  </Resource>
   <Resource Name="Admin.Catalog.Products.Pictures.Fields.DisplayOrder">
     <Value>Display order</Value>
   </Resource>
@@ -3903,6 +3915,9 @@
   <Resource Name="Admin.Common.NoCancel">
     <Value>No, cancel</Value>
   </Resource>
+  <Resource Name="Admin.Common.Picture.Attributes">
+    <Value>Picture attributes</Value>
+  </Resource>
   <Resource Name="Admin.Common.Preview">
     <Value>Show in the shop page</Value>
   </Resource>
@@ -4053,8 +4068,8 @@
   <Resource Name="Admin.Configuration.Countries.EditCountryDetails">
     <Value>Edit country details</Value>
   </Resource>
-  <Resource Name="Admin.Configuration.Countries.ExportToCsv">
-    <Value>Export states to CSV</Value>
+  <Resource Name="Admin.Configuration.Countries.ExportStatesToExcel">
+    <Value>Export states to Excel</Value>
   </Resource>
   <Resource Name="Admin.Configuration.Countries.Fields.AllowsBilling">
     <Value>Allows billing</Value>
@@ -4104,11 +4119,11 @@
   <Resource Name="Admin.Configuration.Countries.Fields.TwoLetterIsoCode.Required">
     <Value>Two letter ISO code is required.</Value>
   </Resource>
-  <Resource Name="Admin.Configuration.Countries.ImportFromCsv">
-    <Value>Import states from CSV</Value>
+  <Resource Name="Admin.Configuration.Countries.ImportStatesFromExcel">
+    <Value>Import states from Excel</Value>
   </Resource>
   <Resource Name="Admin.Configuration.Countries.ImportSuccess">
-    <Value>{0} states have been successfully imported</Value>
+    <Value>The states have been successfully imported</Value>
   </Resource>
   <Resource Name="Admin.Configuration.Countries.Info">
     <Value>Country info</Value>
@@ -4916,9 +4931,6 @@
   </Resource>
   <Resource Name="Admin.Configuration.Shipping.Providers.Fields.IsActive">
     <Value>Is active</Value>
-  </Resource>
-  <Resource Name="Admin.Configuration.Shipping.Providers.Fields.Logo">
-    <Value>Logo</Value>
   </Resource>
   <Resource Name="Admin.Configuration.Shipping.Providers.Fields.SystemName">
     <Value>System name</Value>
@@ -11487,6 +11499,12 @@
   <Resource Name="Admin.Settings.Media.ProductThumbPictureSizeOnProductDetailsPage">
     <Value>Product thumbnail image size (product page)</Value>
   </Resource>
+  <Resource Name="Admin.Settings.Media.StoreLocation">
+    <Value>Image location (url)</Value>
+  </Resource>
+  <Resource Name="Admin.Settings.Media.StoreLocation.hint">
+    <Value>This settings is only for advanced user</Value>
+  </Resource>
   <Resource Name="Admin.Settings.Media.VendorThumbPictureSize">
     <Value>Vendor thumbnail image size</Value>
   </Resource>
@@ -12738,6 +12756,9 @@
   <Resource Name="Api.Catalog.Product.Fields.BackorderMode.Required">
     <Value>Backorder mode is required</Value>
   </Resource>
+  <Resource Name="Api.Catalog.Product.Fields.BrandId.Notexists">
+    <Value>Brand ident not exist</Value>
+  </Resource>
   <Resource Name="Api.Catalog.Product.Fields.DownloadActivationType.Required">
     <Value>Download activation type is required</Value>
   </Resource>
@@ -13352,6 +13373,9 @@
   </Resource>
   <Resource Name="Common.Show">
     <Value>Show</Value>
+  </Resource>
+  <Resource Name="Common.Success">
+    <Value>Success</Value>
   </Resource>
   <Resource Name="Common.Upload">
     <Value>Upload</Value>
@@ -14141,6 +14165,9 @@
   </Resource>
   <Resource Name="Media.Brand.ImageAlternateTextFormat">
     <Value>Picture for brand {0}</Value>
+  </Resource>
+  <Resource Name="Media.Brand.ImageLinkTitleFormat">
+    <Value>Show brand for {0}</Value>
   </Resource>
   <Resource Name="Media.Category.ImageAlternateTextFormat">
     <Value>Picture for category {0}</Value>

@@ -115,8 +115,6 @@ namespace Grand.Web.Admin.Models.Catalog
             public string CustomerEmail { get; set; }
         }
 
-
-
         #endregion
     }
 
