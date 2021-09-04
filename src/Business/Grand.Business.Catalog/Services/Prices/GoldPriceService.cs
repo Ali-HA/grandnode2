@@ -78,33 +78,45 @@ namespace Grand.Business.Catalog.Services.Prices
         {
             string[] gp_res;
             decimal price = 0.0m;
-            if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 5))
+            //if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 5))
+
+            //check if we already retirved the price today, if so then return the stored price value
+            if (retrieveTime.HasValue && (DateTime.Now.Date ==  retrieveTime.Value.Date) )
             {
                 price = gprice_last * weight * ratio;
                 gp_res = new string[] { price.ToString("F2"), retrieveTime.Value.ToString() };
                 return gp_res;
             }
 
+            //otherwise, fetch the latest price from MOCI site
             try
             {
 
-                const string url = @"https://new2.moci.gov.kw/ar/gold/table_api/?action_name=ajax_table&draw=103&columns[0][data]=gold_type&columns[0][name]=&columns[0][searchable]=true&columns[0][orderable]=false&columns[0][search][value]=&columns[0][search][regex]=false&columns[1][data]=price_dinar&columns[1][name]=&columns[1][searchable]=true&columns[1][orderable]=false&columns[1][search][value]=&columns[1][search][regex]=false&columns[2][data]=price_usd&columns[2][name]=&columns[2][searchable]=true&columns[2][orderable]=false&columns[2][search][value]=&columns[2][search][regex]=false&start=0&length=-1&search[value]=&search[regex]=false&_=1598317869725";
+                //const string url = @"https://new2.moci.gov.kw/ar/gold/table_api/?action_name=ajax_table&draw=103&columns[0][data]=gold_type&columns[0][name]=&columns[0][searchable]=true&columns[0][orderable]=false&columns[0][search][value]=&columns[0][search][regex]=false&columns[1][data]=price_dinar&columns[1][name]=&columns[1][searchable]=true&columns[1][orderable]=false&columns[1][search][value]=&columns[1][search][regex]=false&columns[2][data]=price_usd&columns[2][name]=&columns[2][searchable]=true&columns[2][orderable]=false&columns[2][search][value]=&columns[2][search][regex]=false&start=0&length=-1&search[value]=&search[regex]=false&_=1598317869725";
+                const string url = @"https://moci.gov.kw/en/market-prices/gold/";   //updated url. paged to be parsed and price retrieved
 
+                var x = client.DefaultRequestHeaders.UserAgent;
+                if (x.Count == 0)
+                {
+                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                }
 
                 HttpResponseMessage response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
 
-                var options = new JsonSerializerOptions {
-                    AllowTrailingCommas = true
-                };
+                //var options = new JsonSerializerOptions {
+                //    AllowTrailingCommas = true
+                //};
 
-                js_GPriceContainer x = JsonSerializer.Deserialize<js_GPriceContainer>(responseBody, options);
+                //js_GPriceContainer x = JsonSerializer.Deserialize<js_GPriceContainer>(responseBody, options);
 
-                decimal.TryParse(x?.data[0]?.price_dinar, out price);
+                //decimal.TryParse(x?.data[0]?.price_dinar, out price);
+                price = ParseForPrice(responseBody);
                 gprice_last = price;
                 price = price * weight * ratio;
-                gp_res = new string[] { price.ToString("F2"), x?.update_time };
+                //gp_res = new string[] { price.ToString("F2"), x?.update_time };
+                gp_res = new string[] { price.ToString("F2"), DateTime.Now.ToString() };
                 retrieveTime = DateTime.Now;
                 return gp_res;
 
@@ -122,8 +134,18 @@ namespace Grand.Business.Catalog.Services.Prices
             }
             return new string[] { gprice_last.ToString(), retrieveTime.Value.ToString() };
         }
-    
 
+
+        static decimal ParseForPrice(string html)
+        {
+            var start = html.IndexOf("price_dinar") + "price_dinar".Length + 2;
+            var end = html.IndexOf("</p>", start);
+            var goldPrice = html.Substring(start, end - start);
+            var gp = goldPrice.Replace("KWD", "").Trim();
+            decimal price;
+            decimal.TryParse(gp, out price);
+            return price;
+        }
         #endregion
     }
 }

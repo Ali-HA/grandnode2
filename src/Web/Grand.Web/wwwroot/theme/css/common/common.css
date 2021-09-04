@@ -148,7 +148,7 @@ body:not(.modal-open) {
     width: 46px;
     height: 46px;
     font-size: 24px;
-    background: #17a2b8;
+    background: #d29c48;
     border-radius: 100%;
     z-index: 1039;
     cursor: pointer;
@@ -472,7 +472,7 @@ dl, ol, ul {
     z-index: 3;
 }
 .modal-close:hover, .modal-close:focus, .modal-close:not(:disabled):not(.disabled):active {
-    color: #17a2b8;
+    color: #d29c48;
     background-color: transparent;
     border-color: transparent;
     box-shadow: none !important;
@@ -722,7 +722,7 @@ input:checked ~ .color-container .color::before {
 }
 .advanced-search-results .price {
     width: 100%;
-    color: #17a2b8;
+    color: #d29c48;
     font-size: 16px;
     font-weight: 500;
     line-height: 1;

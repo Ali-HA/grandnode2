@@ -33,7 +33,7 @@
     font-weight: 400;
 }
 .generalLeftSide li.active.last > a {
-    color: #17a2b8;
+    color: #d29c48;
 }
 .generalLeftSide li a .total {
     position: relative;
@@ -43,7 +43,7 @@
     opacity: .5;
 }
 .generalLeftSide .block-category-navigation li.active .sublist > li.last > a {
-    color: #17a2b8;
+    color: #d29c48;
     font-weight: 500;
 }
 .generalLeftSide li {
