@@ -156,7 +156,7 @@
 
                 this.getPrice();
 
-            }, 5000)
+            }, 3600000)
         }
         , getPrice: function () {
             var allGoldies = document.querySelectorAll('.goldie');

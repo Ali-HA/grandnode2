@@ -63,11 +63,26 @@ namespace Grand.Business.Catalog.Services.Prices
             public string price_usd { get; set; }
 
         }
+
+        public class dtoGoldPrice
+        {
+            public int timestamp { get; set; }
+            public string metal { get; set; }
+            public string currency { get; set; }
+            public string exchange { get; set; }
+            public string symbol { get; set; }
+            public int open_time { get; set; }
+            public double price { get; set; }
+            public double ch { get; set; }
+            public double ask { get; set; }
+            public double bid { get; set; }
+        }
+
         #endregion
 
         #region Utilities
 
-       
+
 
 
         #endregion
@@ -81,10 +96,11 @@ namespace Grand.Business.Catalog.Services.Prices
             //if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 5))
 
             //check if we already retirved the price today, if so then return the stored price value
-            if (retrieveTime.HasValue && (DateTime.Now.Date ==  retrieveTime.Value.Date) )
+            if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 7200)) //retirve new value every 2 hours
+             //if (retrieveTime.HasValue && (DateTime.Now.Date ==  retrieveTime.Value.Date) )
             {
                 price = gprice_last * weight * ratio;
-                gp_res = new string[] { price.ToString("F2"), retrieveTime.Value.ToString() };
+                gp_res = new string[] { price.ToString("F3"), retrieveTime.Value.ToString() };
                 return gp_res;
             }
 
@@ -93,30 +109,37 @@ namespace Grand.Business.Catalog.Services.Prices
             {
 
                 //const string url = @"https://new2.moci.gov.kw/ar/gold/table_api/?action_name=ajax_table&draw=103&columns[0][data]=gold_type&columns[0][name]=&columns[0][searchable]=true&columns[0][orderable]=false&columns[0][search][value]=&columns[0][search][regex]=false&columns[1][data]=price_dinar&columns[1][name]=&columns[1][searchable]=true&columns[1][orderable]=false&columns[1][search][value]=&columns[1][search][regex]=false&columns[2][data]=price_usd&columns[2][name]=&columns[2][searchable]=true&columns[2][orderable]=false&columns[2][search][value]=&columns[2][search][regex]=false&start=0&length=-1&search[value]=&search[regex]=false&_=1598317869725";
-                const string url = @"https://moci.gov.kw/en/market-prices/gold/";   //updated url. paged to be parsed and price retrieved
+                //const string url = @"https://moci.gov.kw/en/market-prices/gold/";   //updated url. paged to be parsed and price retrieved
+                const string url = @"https://www.goldapi.io/api/XAU/KWD";   //updated url. paged to be parsed and price retrieved
 
                 var x = client.DefaultRequestHeaders.UserAgent;
                 if (x.Count == 0)
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+                    client.DefaultRequestHeaders.Add("x-access-token", "goldapi-11yh2ayke5xtmr3-io");
+                    //client.DefaultRequestHeaders.Add("Content-Type", "application/json");
                 }
 
                 HttpResponseMessage response = await client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
                 string responseBody = await response.Content.ReadAsStringAsync();
 
-                //var options = new JsonSerializerOptions {
-                //    AllowTrailingCommas = true
-                //};
+                var options = new JsonSerializerOptions {
+                    AllowTrailingCommas = true
+                };
 
                 //js_GPriceContainer x = JsonSerializer.Deserialize<js_GPriceContainer>(responseBody, options);
+                dtoGoldPrice gp = JsonSerializer.Deserialize<dtoGoldPrice>(responseBody, options);
 
                 //decimal.TryParse(x?.data[0]?.price_dinar, out price);
-                price = ParseForPrice(responseBody);
+                //price = ParseForPrice(responseBody);
+
+                price = (decimal)(gp.price / 28.34952);
                 gprice_last = price;
                 price = price * weight * ratio;
                 //gp_res = new string[] { price.ToString("F2"), x?.update_time };
-                gp_res = new string[] { price.ToString("F2"), DateTime.Now.ToString() };
+                //gp_res = new string[] { price.ToString("F2"), DateTime.Now.ToString() };
+                gp_res = new string[] { price.ToString("F3"), DateTime.Now.ToString() };
                 retrieveTime = DateTime.Now;
                 return gp_res;
 
@@ -127,7 +150,7 @@ namespace Grand.Business.Catalog.Services.Prices
                 if (retrieveTime.HasValue)
                 {
                     price = gprice_last * weight * ratio;
-                    gp_res = new string[] { price.ToString("F2"), retrieveTime.Value.ToString() };
+                    gp_res = new string[] { price.ToString("F3"), retrieveTime.Value.ToString() };
                     return gp_res;
                 }
 
