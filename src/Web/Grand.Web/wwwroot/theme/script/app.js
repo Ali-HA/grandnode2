@@ -309,12 +309,13 @@
                     //console.log(response);
                     console.log(response.data.Price);
                     var rt = 0.0;
+                    var gldP = parseFloat(response.data.Price.replace('٫','.'));
                     for (var i = 0, len = allGoldies.length | 0; i < len; i = i + 1 | 0) {
                         rt = parseFloat(allGoldies[i].getAttribute('data-rt'));
                         console.log('rt' + rt);
                         if (allGoldies[i].nodeName == "INPUT") {
-                            allGoldies[i].value = (response.data.Price * rt).toFixed(2);
-                            document.getElementById("txtPrice").innerHTML = allGoldies[i].value + ' KD'
+                            allGoldies[i].value = (gldP * rt);
+                            document.getElementById("txtPrice").innerHTML = (gldP * rt).toFixed(2) + ' KD'
                         }
                         else {
                             allGoldies[i].textContent = (response.data.Price * rt).toFixed(2);
