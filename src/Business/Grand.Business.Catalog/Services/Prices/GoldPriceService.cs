@@ -25,6 +25,13 @@ using System.Text.Json;
 //ALI: Gold Service
 namespace Grand.Business.Catalog.Services.Prices
 {
+    public enum GoldPriceStatus { 
+        UseCurrentValue,
+        WaitingForResponse,
+        ResponseError,
+        RequestNewValue
+    }
+
     /// <summary>
     /// Pricing service
     /// </summary>
@@ -35,7 +42,8 @@ namespace Grand.Business.Catalog.Services.Prices
         static HttpClient client = new HttpClient();
         public static DateTime? retrieveTime { get; set; }
         public static decimal gprice_last { get; set; }
-
+        public static GoldPriceStatus GPStatus { get; set; } = GoldPriceStatus.RequestNewValue;
+        public static int CallCount { get; set; } = 0;
         #endregion
 
         #region Ctor
@@ -91,71 +99,80 @@ namespace Grand.Business.Catalog.Services.Prices
 
         public virtual async Task<string[]> s_GoldPrice(decimal weight, decimal ratio)
         {
-            string[] gp_res;
+            System.Diagnostics.Debug.WriteLine("GPrice service call:{0}",++CallCount);
+            //string[] gp_res;
             decimal price = 0.0m;
-            //if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 5))
 
-            //check if we already retirved the price today, if so then return the stored price value
-            if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds < 7200)) //retirve new value every 2 hours
-             //if (retrieveTime.HasValue && (DateTime.Now.Date ==  retrieveTime.Value.Date) )
+            switch (GPStatus)
             {
-                price = gprice_last * weight * ratio;
-                gp_res = new string[] { price.ToString("F3"), retrieveTime.Value.ToString() };
-                return gp_res;
+                case GoldPriceStatus.UseCurrentValue:
+                    System.Diagnostics.Debug.WriteLine("Use Current");
+                    if (retrieveTime.HasValue && ((DateTime.Now - retrieveTime.Value).TotalSeconds > 5400)) //retirve new value every 90min ==> 4500s
+                    {
+                        System.Diagnostics.Debug.WriteLine("Use Current -> request New Value");
+                        GPStatus = GoldPriceStatus.RequestNewValue;
+                        await s_GoldPrice(weight, ratio);    //make new request after passing of 10mins
+                    }
+                    break;
+                case GoldPriceStatus.WaitingForResponse:
+                    System.Diagnostics.Debug.WriteLine("wait For Response");
+                    break;
+                case GoldPriceStatus.ResponseError:
+                    System.Diagnostics.Debug.WriteLine("RequestError");
+                    if ((DateTime.Now - retrieveTime.Value).TotalSeconds > 600)
+                    {
+                        System.Diagnostics.Debug.WriteLine("RequestError > 600");
+                        GPStatus = GoldPriceStatus.RequestNewValue;
+                        await s_GoldPrice(weight,ratio);    //make new request after passing of 10mins
+                    }
+                    break;
+                case GoldPriceStatus.RequestNewValue:
+                    System.Diagnostics.Debug.WriteLine("RequestNew");
+                    try
+                    {
+                        const string url = @"https://www.goldapi.io/api/XAU/KWD";
+                        var x = client.DefaultRequestHeaders.UserAgent;
+                        var h = client.DefaultRequestHeaders;
+                        ;
+                        if (!h.Contains("x-access-token"))
+                        {
+                            client.DefaultRequestHeaders.Add("x-access-token", "goldapi-11yh2ayke5xtmr3-io");
+                        }
+                        GPStatus = GoldPriceStatus.WaitingForResponse;
+                        HttpResponseMessage response = await client.GetAsync(url);
+                        if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                        {
+                            System.Diagnostics.Debug.WriteLine("RequestNew - > error");
+                            GPStatus = GoldPriceStatus.ResponseError;
+                            retrieveTime = DateTime.Now;
+                            break;
+                        }
+                        response.EnsureSuccessStatusCode();
+                        string responseBody = await response.Content.ReadAsStringAsync();
+                        var options = new JsonSerializerOptions {
+                            AllowTrailingCommas = true
+                        };
+                        dtoGoldPrice gp = JsonSerializer.Deserialize<dtoGoldPrice>(responseBody, options);
+                        price = (decimal)(gp.price / 28.34952);
+                        gprice_last = price;
+                        price = price * weight * ratio;
+                        retrieveTime = DateTime.Now;
+                        System.Diagnostics.Debug.WriteLine("RequestNew -> use current");
+                        GPStatus = GoldPriceStatus.UseCurrentValue;
+                    }
+                    catch (Exception err)
+                    {
+                        retrieveTime = DateTime.Now;
+                        GPStatus = GoldPriceStatus.ResponseError;
+                        System.Diagnostics.Debug.WriteLine("GP service call Exception:{0}\r\n{1}", err.Message, err?.InnerException.Message);
+                    }
+                    break;
+                default:
+                    break;
             }
 
-            //otherwise, fetch the latest price from MOCI site
-            try
-            {
+            return new string[] { (gprice_last * weight * ratio).ToString("F3"), retrieveTime.HasValue? retrieveTime.Value.ToString(): DateTime.Now.ToString() };
 
-                //const string url = @"https://new2.moci.gov.kw/ar/gold/table_api/?action_name=ajax_table&draw=103&columns[0][data]=gold_type&columns[0][name]=&columns[0][searchable]=true&columns[0][orderable]=false&columns[0][search][value]=&columns[0][search][regex]=false&columns[1][data]=price_dinar&columns[1][name]=&columns[1][searchable]=true&columns[1][orderable]=false&columns[1][search][value]=&columns[1][search][regex]=false&columns[2][data]=price_usd&columns[2][name]=&columns[2][searchable]=true&columns[2][orderable]=false&columns[2][search][value]=&columns[2][search][regex]=false&start=0&length=-1&search[value]=&search[regex]=false&_=1598317869725";
-                //const string url = @"https://moci.gov.kw/en/market-prices/gold/";   //updated url. paged to be parsed and price retrieved
-                const string url = @"https://www.goldapi.io/api/XAU/KWD";   //updated url. paged to be parsed and price retrieved
-
-                var x = client.DefaultRequestHeaders.UserAgent;
-                if (x.Count == 0)
-                {
-                    //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
-                    client.DefaultRequestHeaders.Add("x-access-token", "goldapi-11yh2ayke5xtmr3-io");
-                    //client.DefaultRequestHeaders.Add("Content-Type", "application/json");
-                }
-
-                HttpResponseMessage response = await client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-                string responseBody = await response.Content.ReadAsStringAsync();
-
-                var options = new JsonSerializerOptions {
-                    AllowTrailingCommas = true
-                };
-
-                //js_GPriceContainer x = JsonSerializer.Deserialize<js_GPriceContainer>(responseBody, options);
-                dtoGoldPrice gp = JsonSerializer.Deserialize<dtoGoldPrice>(responseBody, options);
-
-                //decimal.TryParse(x?.data[0]?.price_dinar, out price);
-                //price = ParseForPrice(responseBody);
-
-                price = (decimal)(gp.price / 28.34952);
-                gprice_last = price;
-                price = price * weight * ratio;
-                //gp_res = new string[] { price.ToString("F2"), x?.update_time };
-                //gp_res = new string[] { price.ToString("F2"), DateTime.Now.ToString() };
-                gp_res = new string[] { price.ToString("F3"), DateTime.Now.ToString() };
-                retrieveTime = DateTime.Now;
-                return gp_res;
-
-            }
-            catch (HttpRequestException e)
-            {
-
-                if (retrieveTime.HasValue)
-                {
-                    price = gprice_last * weight * ratio;
-                    gp_res = new string[] { price.ToString("F3"), retrieveTime.Value.ToString() };
-                    return gp_res;
-                }
-
-            }
-            return new string[] { gprice_last.ToString(), retrieveTime.Value.ToString() };
         }
 
 
