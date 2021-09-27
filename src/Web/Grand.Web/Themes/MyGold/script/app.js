@@ -179,7 +179,7 @@
                             document.getElementById("txtPrice").innerHTML = (gldP * rt).toFixed(2) + ' KD'
                         }
                         else {
-                            allGoldies[i].textContent = (response.data.Price * rt).toFixed(2);
+                            allGoldies[i].textContent = (gldP * rt).toFixed(2);
                         }
 
                     }
